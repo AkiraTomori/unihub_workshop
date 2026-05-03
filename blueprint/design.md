@@ -148,17 +148,24 @@ The design is centered on 12 core tables in PostgreSQL:
 The most important columns for each table are summarized below.
 
 - rooms: `name`, `map_image_url`, `base_capacity`.
-- workshops: `room_id`, `title`, `start_time`, `end_time`, `capacity`, `registered_count`, `price`, `status`.
+- workshops: `room_id`, `title`, `description`, `cover_image_url`, `start_time`, `end_time`, `capacity`, `registered_count`, `price`, `status`, `deleted_at`.
 - documents: `workshop_id` (unique), `pdf_url`, `ai_summary`, `process_status`.
-- users: `student_code` (unique), `email` (unique), `full_name`, `role`, `last_synced_at`.
+- users: `student_code` (unique), `email` (unique), `password_hash` (`varchar(255)`, NOT NULL), `full_name`, `role`, `is_active` (default `true`), `last_synced_at`.
 - user_sessions: `user_id`, `refresh_token` (unique), `ip_address`, `is_revoked`, `expires_at`.
-- registrations: `user_id`, `workshop_id`, `status`, `qr_code` (unique), `offline_sync_id`.
-- payments: `registration_id` (unique), `amount`, `provider`, `transaction_id`, `idempotency_key` (unique), `status`.
+- registrations: `user_id`, `workshop_id`, `status`, `expires_at` (nullable), `qr_code` (unique), `offline_sync_id`.
+- payments: `registration_id` (unique), `amount`, `provider`, `transaction_id`, `idempotency_key` (unique), `status` (`PENDING`, `SUCCESS`, `FAILED`, `REFUNDED`).
 - checkins: `registration_id`, `device_id`, `scanned_at`, `offline_sync_id`.
 - audit_logs: `actor_id`, `entity_id`, `action`, `entity_type`, `old_payload`, `new_payload`.
 - csv_sync_logs: `file_name`, `status`, `total_rows`, `success_rows`, `error_details`.
 - outbox_events: `aggregate_id`, `event_type`, `payload`, `status`.
 - notifications: `user_id`, `channel`, `template`, `subject`, `recipient`, `status`, `read_at`.
+
+Security and lifecycle notes:
+
+- `users.password_hash` stores only one-way hashes (bcrypt/argon2), never plain-text passwords.
+- `users.is_active = false` blocks login and protected API usage without deleting historical data.
+- `registrations.expires_at` is used by cron jobs to cancel overdue `PENDING_PAYMENT` holds and release seats.
+- `workshops.deleted_at` enables soft delete for canceled/removed workshops while preserving payment and audit traceability.
 
 ### ERD Diagram
 ```mermaid
@@ -186,12 +193,15 @@ erDiagram
         uuid id
         uuid room_id
         varchar title
+        text description
+        varchar cover_image_url
         timestamp start_time
         timestamp end_time
         int capacity
         int registered_count
         decimal price
         enum status
+        timestamp deleted_at
         timestamp created_at
         timestamp updated_at
     }
@@ -210,8 +220,10 @@ erDiagram
         uuid id
         varchar student_code
         varchar email
+        varchar password_hash
         varchar full_name
         enum role
+        boolean is_active
         timestamp last_synced_at
         timestamp created_at
         timestamp updated_at
@@ -246,6 +258,7 @@ erDiagram
         uuid user_id
         uuid workshop_id
         enum status
+        timestamp expires_at
         varchar qr_code
         varchar offline_sync_id
         timestamp created_at
@@ -360,7 +373,11 @@ The following indexes are mandatory for performance and data integrity:
   - `registrations(user_id, workshop_id)` ensures one user cannot hold two tickets for the same workshop unless the previous registration is cancelled.
 - B-tree indexes:
   - `registrations(user_id)` and `registrations(workshop_id)` accelerate joins and ownership queries.
-  - `workshops(status, start_time)` speeds up the public workshop list filtered by publish status and schedule.
+    - `registrations(status, expires_at)` accelerates cron cleanup for expired pending reservations.
+    - `users(is_active)` accelerates login/account-state checks.
+    - `workshops(status, start_time)` speeds up the public workshop list filtered by publish status and schedule.
+    - `workshops(deleted_at)` supports soft-delete filtering (`deleted_at IS NULL`).
+    - `payments(status)` supports settlement and refund reconciliation queries.
   - `outbox_events(status)` supports fast polling by background workers.
   - `checkins(offline_sync_id)` avoids duplicate inserts during mobile batch synchronization.
 
@@ -514,7 +531,7 @@ sequenceDiagram
     Gateway->>Core: Forward request
     Core->>Redis: Reserve one seat atomically
     alt Seat available
-        Core->>PG: Create registration with PENDING_PAYMENT
+        Core->>PG: Create registration with PENDING_PAYMENT + expires_at(now+15m)
         Core->>Pay: Create payment request
         Pay->>PG: Store payment record
         Pay-->>Core: Payment result
@@ -532,7 +549,7 @@ sequenceDiagram
     end
 ```
 
-If an error happens midway, the system does not lose the seat state. Redis is used first for reservation control, and PostgreSQL is updated only after the reservation step succeeds. If payment fails, the system keeps the booking in a pending state instead of issuing a false confirmation.
+If an error happens midway, the system does not lose the seat state. Redis is used first for reservation control, and PostgreSQL is updated only after the reservation step succeeds. If payment fails, the system keeps the booking in a pending state with `expires_at` instead of issuing a false confirmation. A scheduled cleanup job cancels overdue pending registrations and restores seat availability.
 
 ### 2. Offline Check-in and Sync Flow
 
@@ -629,7 +646,7 @@ When the circuit is open, the system does not stop browsing or registration comp
 
 | Graceful Degradation Action | Result |
 |---|---|
-| Create registration in `PENDING_PAYMENT` | Seat is reserved but payment is not marked complete yet |
+| Create registration in `PENDING_PAYMENT` + `expires_at` | Seat is reserved temporarily and can be auto-released after timeout |
 | Notify the student | Student knows payment must be retried later |
 | Continue non-payment features | Browsing, event details, and admin functions remain available |
 

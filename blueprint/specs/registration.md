@@ -5,6 +5,8 @@ This feature handles workshop registration under heavy traffic and prevents over
 
 The API Gateway limits request bursts using Token Bucket rate limiting. The Core API reserves seats atomically in Redis using the `DECR` command before it writes the registration into PostgreSQL.
 
+For paid registrations, the system sets `registrations.expires_at` (for example, now + 15 minutes) while status is `PENDING_PAYMENT`. A background cleanup job cancels expired holds and restores seat availability.
+
 ## API Surface
 
 | Method | Endpoint | Purpose |
@@ -30,7 +32,7 @@ sequenceDiagram
     Gateway->>Core: Forward request if allowed
     Core->>Redis: DECR workshop seat counter
     alt Seat available
-        Core->>DB: Create registration record
+        Core->>DB: Create registration (PENDING_PAYMENT, expires_at=now+15m)
         Core-->>Web: Return success
     else Seat sold out
         Core->>Redis: Restore counter if needed
@@ -46,6 +48,8 @@ Step-by-step behavior:
 4. If a seat is available, the Core API writes the registration into PostgreSQL.
 5. The student receives a success response.
 6. If no seat remains, the system returns a sold-out response immediately.
+
+When a pending payment is not completed before `expires_at`, a cron worker marks the registration as `CANCELLED` and releases the reserved seat.
 
 ## Error Scenarios
 
@@ -76,6 +80,15 @@ Expected behavior:
 - Return an error response.
 - Keep the seat availability consistent.
 
+### 4. Pending payment expired
+If payment is not completed before `registrations.expires_at`, the pending reservation must not block seats indefinitely.
+
+Expected behavior:
+
+- A scheduled job finds expired `PENDING_PAYMENT` rows.
+- The job marks them `CANCELLED`.
+- The system restores seat counters and emits an audit/event record.
+
 ## Constraints
 
 | Constraint | Requirement |
@@ -85,6 +98,7 @@ Expected behavior:
 | Rate limiting | Use Token Bucket at the Gateway |
 | Atomic reservation | Use Redis `DECR` for seat reservation |
 | Consistency | Restore the seat counter on failure |
+| Hold expiration | `registrations.expires_at` must be set for pending payment holds |
 | Fairness | Avoid request flooding from a small number of clients |
 
 ## Acceptance Criteria
@@ -93,4 +107,5 @@ Expected behavior:
 - A seat can never be oversold.
 - The final seat cannot be assigned to two students.
 - Failed PostgreSQL writes do not leave the Redis counter inconsistent.
+- Expired `PENDING_PAYMENT` registrations are canceled automatically and seats are released.
 - Registration remains responsive during traffic spikes.

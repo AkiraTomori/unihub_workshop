@@ -3,6 +3,8 @@
 ## Description
 This feature allows the Organizing Committee to create, update, cancel, and manage workshops, including uploading PDF documents that will be summarized by AI.
 
+Workshop records include `description` and `cover_image_url` for frontend/mobile display. Deletion is implemented as soft delete via `deleted_at`, so financial and audit history remains intact.
+
 The PDF summary flow is asynchronous. The Core API stores the document metadata and publishes an event to RabbitMQ. The AI Worker then extracts the PDF content and calls Vertex AI to generate the summary.
 
 ## API Surface
@@ -13,7 +15,7 @@ The PDF summary flow is asynchronous. The Core API stores the document metadata 
 | GET | `/workshops/{id}` | Get workshop details |
 | POST | `/admin/workshops` | Create workshop |
 | PUT | `/admin/workshops/{id}` | Update workshop |
-| DELETE | `/admin/workshops/{id}` | Cancel workshop |
+| DELETE | `/admin/workshops/{id}` | Soft-delete (cancel) workshop |
 | POST | `/admin/documents` | Upload a workshop PDF |
 | GET | `/admin/documents/{id}` | Check summary processing status |
 | GET | `/admin/stats` | View statistics |
@@ -53,13 +55,15 @@ sequenceDiagram
 
 Step-by-step behavior:
 
-1. The admin creates or updates workshop data through the web interface.
+1. The admin creates or updates workshop data through the web interface, including `description` and `cover_image_url`.
 2. The Core API stores the workshop in PostgreSQL.
 3. When a PDF is uploaded, the Core API creates a document record with `PENDING` status.
 4. The Core API publishes an event to RabbitMQ.
 5. The AI Worker consumes the event, extracts text, and sends it to Vertex AI.
 6. The summary is written back to PostgreSQL.
 7. The workshop detail page displays the completed summary.
+
+When admin deletes a workshop, the API sets `deleted_at = NOW()` instead of hard deleting the row.
 
 ## Error Scenarios
 
@@ -90,6 +94,15 @@ Expected behavior:
 - The document stays in `PROCESSING` or `PENDING`.
 - After retry failure, the status becomes `FAILED`.
 
+### 4. Workshop deletion with existing registrations/payments
+If a workshop already has registration and payment history, hard delete must be avoided.
+
+Expected behavior:
+
+- Use soft delete by setting `deleted_at`.
+- Exclude deleted workshops from public list endpoints (`WHERE deleted_at IS NULL`).
+- Keep related payment and audit data for reconciliation and compliance.
+
 ## Constraints
 
 | Constraint | Requirement |
@@ -98,6 +111,8 @@ Expected behavior:
 | File handling | Large PDFs must not block the API thread |
 | Reliability | Metadata must survive broker or AI failures |
 | Status tracking | Use `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED` |
+| Workshop visibility | Public workshop queries must filter `deleted_at IS NULL` |
+| Content fields | `description` and `cover_image_url` are required for rendering cards/details |
 | Security | Only admins can upload workshop documents |
 | UX | The admin must get an immediate accepted response |
 
@@ -108,3 +123,4 @@ Expected behavior:
 - The summary appears on the workshop detail page after processing.
 - Large PDFs do not crash or freeze the main API.
 - Broker or AI failures do not delete upload metadata.
+- Public workshop lists do not return soft-deleted rows.

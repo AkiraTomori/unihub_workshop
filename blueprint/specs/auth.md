@@ -3,7 +3,7 @@
 ## Description
 This feature defines how users authenticate and how the system authorizes access for the three roles: Student, Organizing Committee, and Staff.
 
-Authentication is based on JWT access tokens and refresh tokens stored in the `user_sessions` table. Authorization is based on Role-Based Access Control (RBAC) and is enforced at both the API Gateway and the Core API.
+Authentication is based on JWT access tokens and refresh tokens stored in the `user_sessions` table. Login verifies submitted passwords against `users.password_hash` (bcrypt/argon2 hash, never plain-text), and inactive users are blocked through `users.is_active`. Authorization is based on Role-Based Access Control (RBAC) and is enforced at both the API Gateway and the Core API.
 
 The feature also covers session revocation and account lockout behavior when suspicious activity is detected.
 
@@ -43,10 +43,12 @@ sequenceDiagram
 Step-by-step behavior:
 
 1. The user signs in with valid credentials.
-2. The Core API verifies the account and creates a session record in `user_sessions`.
-3. The API Gateway validates the JWT before forwarding requests.
-4. The Core API checks the role claim and endpoint permissions.
-5. If the request is allowed, the operation continues; otherwise, the system returns a forbidden response.
+2. The Core API loads the user and compares `password` with `users.password_hash`.
+3. The Core API checks `users.is_active`; if false, login is rejected.
+4. If valid and active, the Core API creates a session record in `user_sessions`.
+5. The API Gateway validates the JWT before forwarding requests.
+6. The Core API checks the role claim and endpoint permissions.
+7. If the request is allowed, the operation continues; otherwise, the system returns a forbidden response.
 
 ## Error Scenarios
 
@@ -77,6 +79,24 @@ Expected behavior:
 - Force the user to sign in again.
 - Keep the lockout state until an administrator or security rule clears it.
 
+### 4. Inactive account
+If a user is deactivated (`users.is_active = false`) by CSV sync or admin action, authentication and token refresh must be blocked.
+
+Expected behavior:
+
+- Return HTTP 403 Forbidden.
+- Do not create new sessions.
+- Keep existing historical records (registrations, payments, audit logs).
+
+### 5. Invalid password
+If a password does not match `users.password_hash`, the authentication attempt fails.
+
+Expected behavior:
+
+- Return HTTP 401 Unauthorized.
+- Do not reveal whether the username exists.
+- Log failed attempts for monitoring.
+
 ## Constraints
 
 | Constraint | Requirement |
@@ -85,12 +105,16 @@ Expected behavior:
 | Authorization model | RBAC with Student, Admin, and Checker roles |
 | Enforcement points | API Gateway and Core API |
 | Session control | Session revocation must be stored in `user_sessions` |
+| Password storage | `users.password_hash` must store one-way hashes only |
+| Account status | `users.is_active = false` must block login and refresh |
 | Security | Protected endpoints must reject unauthorized requests by default |
 | Auditability | Sensitive actions should be traceable |
 
 ## Acceptance Criteria
 
 - A valid user can sign in and receive a JWT.
+- Password validation uses `users.password_hash` only.
+- Inactive users cannot sign in or refresh tokens.
 - Invalid or expired tokens are rejected at the API Gateway.
 - The Core API blocks role violations with HTTP 403.
 - Revoked sessions cannot be reused to refresh tokens.

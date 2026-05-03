@@ -38,10 +38,10 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 
 | Method | Endpoint | Purpose | Roles | Returns |
 |---|---|---|---|---|
-| POST | `/auth/login` | Sign in and issue tokens | Public | `access_token`, `refresh_token`, `expires_in`, `user { id, full_name, email, role, student_code }` |
+| POST | `/auth/login` | Sign in and issue tokens | Public | `access_token`, `refresh_token`, `expires_in`, `user { id, full_name, email, role, student_code, is_active }` |
 | POST | `/auth/refresh` | Refresh access token | Public with refresh token | `access_token`, `expires_in` |
 | POST | `/auth/logout` | Revoke current session | Authenticated | `revoked`, `session_id` |
-| GET | `/auth/me` | Return current user profile | Authenticated | `id`, `full_name`, `email`, `role`, `student_code`, `last_synced_at` |
+| GET | `/auth/me` | Return current user profile | Authenticated | `id`, `full_name`, `email`, `role`, `student_code`, `is_active`, `last_synced_at` |
 
 ### Login Request
 
@@ -66,7 +66,8 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
       "full_name": "Nguyen Van A",
       "email": "a@example.com",
       "role": "STUDENT",
-      "student_code": "21127001"
+      "student_code": "21127001",
+      "is_active": true
     }
   }
 }
@@ -107,6 +108,7 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
     "email": "a@example.com",
     "role": "STUDENT",
     "student_code": "21127001",
+    "is_active": true,
     "last_synced_at": "2026-04-30T02:00:00Z"
   }
 }
@@ -116,11 +118,11 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 
 | Method | Endpoint | Purpose | Roles | Returns |
 |---|---|---|---|---|
-| GET | `/workshops` | List published workshops | Authenticated | `items[]` with `id`, `title`, `status`, `start_time`, `end_time`, `room { id, name }`, `capacity`, `registered_count`, `remaining_seats`, `price`, plus pagination fields `page`, `page_size`, `total` |
-| GET | `/workshops/{id}` | Get workshop details | Authenticated | full workshop object with `description`, `room { id, name, base_capacity }`, `capacity`, `registered_count`, `remaining_seats`, `price`, and `document { status, ai_summary }` |
+| GET | `/workshops` | List published workshops | Authenticated | `items[]` with `id`, `title`, `description`, `cover_image_url`, `status`, `start_time`, `end_time`, `room { id, name }`, `capacity`, `registered_count`, `remaining_seats`, `price`, plus pagination fields `page`, `page_size`, `total` (`deleted_at IS NULL`) |
+| GET | `/workshops/{id}` | Get workshop details | Authenticated | full workshop object with `description`, `cover_image_url`, `room { id, name, base_capacity }`, `capacity`, `registered_count`, `remaining_seats`, `price`, and `document { status, ai_summary }` |
 | POST | `/admin/workshops` | Create workshop | Admin | created workshop object with `id`, `title`, `status`, and `workshop_id`-linked fields |
 | PUT | `/admin/workshops/{id}` | Update workshop | Admin | updated workshop object with `id` and `updated=true` |
-| DELETE | `/admin/workshops/{id}` | Cancel workshop | Admin | `id`, `status`, and cancellation confirmation |
+| DELETE | `/admin/workshops/{id}` | Cancel workshop (soft delete) | Admin | `id`, `status`, `deleted_at`, and cancellation confirmation |
 | POST | `/admin/documents` | Upload workshop PDF | Admin | `document_id`, `workshop_id`, `status` |
 | GET | `/admin/documents/{id}` | Check summary status | Admin | `document_id`, `status`, `ai_summary`, `updated_at` |
 | GET | `/admin/stats` | View registration statistics | Admin | `total_workshops`, `total_registrations`, and `by_status { PENDING, CONFIRMED, CANCELLED }` |
@@ -135,6 +137,8 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
       {
         "id": "1f7b8a4a-7f32-4e75-8b1a-4f4d5e0a31ef",
         "title": "AI for Students",
+        "description": "Introductory workshop on practical AI tools.",
+        "cover_image_url": "https://cdn.unihub.local/workshops/ai-for-students-cover.jpg",
         "status": "PUBLISHED",
         "start_time": "2026-04-30T08:00:00Z",
         "end_time": "2026-04-30T09:30:00Z",
@@ -164,6 +168,7 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
     "id": "1f7b8a4a-7f32-4e75-8b1a-4f4d5e0a31ef",
     "title": "AI for Students",
     "description": "Introductory workshop on practical AI tools.",
+    "cover_image_url": "https://cdn.unihub.local/workshops/ai-for-students-cover.jpg",
     "status": "PUBLISHED",
     "start_time": "2026-04-30T08:00:00Z",
     "end_time": "2026-04-30T09:30:00Z",
@@ -216,7 +221,8 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
   "success": true,
   "data": {
     "id": "d1c0be6c-7e4a-4e2d-9d8f-9fd2e0b0c8c1",
-    "status": "CANCELLED"
+    "status": "CANCELLED",
+    "deleted_at": "2026-05-03T11:00:00Z"
   }
 }
 ```
@@ -276,9 +282,9 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 
 | Method | Endpoint | Purpose | Roles | Returns |
 |---|---|---|---|---|
-| POST | `/registrations` | Register for a workshop | Student | `registration_id`, `status`, `qr_code`, `workshop_id`, `payment_status`, and `remaining_seats` |
-| GET | `/registrations/me` | View my registrations | Student | `items[]` with `registration_id`, `workshop { id, title }`, `status`, `qr_code`, `payment_status` |
-| GET | `/registrations/{id}` | View one registration | Student, Admin | `registration_id`, `status`, `qr_code`, `workshop { id, title, start_time }`, `payment { status, amount }`, `checkins[]` |
+| POST | `/registrations` | Register for a workshop | Student | `registration_id`, `status`, `qr_code`, `workshop_id`, `expires_at`, `payment_status`, and `remaining_seats` |
+| GET | `/registrations/me` | View my registrations | Student | `items[]` with `registration_id`, `workshop { id, title }`, `status`, `expires_at`, `qr_code`, `payment_status` |
+| GET | `/registrations/{id}` | View one registration | Student, Admin | `registration_id`, `status`, `expires_at`, `qr_code`, `workshop { id, title, start_time }`, `payment { status, amount }`, `checkins[]` |
 
 ### Registration Request
 
@@ -295,7 +301,8 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
   "success": true,
   "data": {
     "registration_id": "b70ca1fa-8f06-4f53-8ad4-4d6f3b38e9f9",
-    "status": "CONFIRMED",
+    "status": "PENDING_PAYMENT",
+    "expires_at": "2026-05-03T11:15:00Z",
     "qr_code": "UNI-REG-2026-000123",
     "workshop_id": "1f7b8a4a-7f32-4e75-8b1a-4f4d5e0a31ef"
   }
@@ -315,7 +322,8 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
           "id": "1f7b8a4a-7f32-4e75-8b1a-4f4d5e0a31ef",
           "title": "AI for Students"
         },
-        "status": "CONFIRMED",
+        "status": "PENDING_PAYMENT",
+        "expires_at": "2026-05-03T11:15:00Z",
         "qr_code": "UNI-REG-2026-000123"
       }
     ]
@@ -330,7 +338,8 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
   "success": true,
   "data": {
     "registration_id": "b70ca1fa-8f06-4f53-8ad4-4d6f3b38e9f9",
-    "status": "CONFIRMED",
+    "status": "PENDING_PAYMENT",
+    "expires_at": "2026-05-03T11:15:00Z",
     "qr_code": "UNI-REG-2026-000123",
     "workshop": {
       "id": "1f7b8a4a-7f32-4e75-8b1a-4f4d5e0a31ef",
@@ -381,7 +390,7 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 |---|---|---|---|---|
 | POST | `/payments` | Create a payment session | Student | `payment_id`, `status`, `redirect_url`, `provider`, `idempotency_state` |
 | POST | `/payments/webhook` | Receive payment gateway callback | Public, signed webhook | `accepted`, `processed`, and optional `payment_id` |
-| GET | `/payments/me` | View my payment history | Student | `items[]` with `payment_id`, `registration_id`, `amount`, `provider`, `status`, `transaction_id` |
+| GET | `/payments/me` | View my payment history | Student | `items[]` with `payment_id`, `registration_id`, `amount`, `provider`, `status`, `transaction_id` (status includes `REFUNDED`) |
 | GET | `/payments/{id}` | View one payment | Student, Admin | `payment_id`, `registration_id`, `amount`, `provider`, `status`, `transaction_id`, `idempotency_key` |
 
 ### Payment Request
@@ -419,7 +428,7 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
         "registration_id": "b70ca1fa-8f06-4f53-8ad4-4d6f3b38e9f9",
         "amount": 100000,
         "provider": "VNPAY",
-        "status": "SUCCESS",
+        "status": "REFUNDED",
         "transaction_id": "VNPAY-20260430-0001"
       }
     ]
@@ -637,6 +646,28 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 {
   "code": "FORBIDDEN",
   "message": "You do not have permission to access this resource."
+}
+```
+
+### Account Inactive
+
+```json
+{
+  "code": "ACCOUNT_INACTIVE",
+  "message": "Your account is inactive. Please contact support."
+}
+```
+
+### Registration Expired
+
+```json
+{
+  "code": "REGISTRATION_EXPIRED",
+  "message": "Payment window has expired. Please register again.",
+  "details": {
+    "registration_id": "b70ca1fa-8f06-4f53-8ad4-4d6f3b38e9f9",
+    "expired_at": "2026-05-03T11:15:00Z"
+  }
 }
 ```
 

@@ -5,6 +5,8 @@ This feature handles paid workshop checkout and protects the system from unstabl
 
 The payment flow uses a Circuit Breaker to isolate repeated external failures. It also uses Idempotency Keys so that retries from the client or payment provider cannot charge the student twice.
 
+Payment status lifecycle includes `PENDING`, `SUCCESS`, `FAILED`, and `REFUNDED` to support accounting and post-cancellation reconciliation.
+
 ## API Surface
 
 | Method | Endpoint | Purpose |
@@ -55,6 +57,8 @@ Step-by-step behavior:
 5. If the provider fails, the circuit breaker protects the rest of the system.
 6. The student sees a pending or retry state instead of a system crash.
 
+If a paid workshop is canceled, the system creates a refund transaction and updates payment status to `REFUNDED`.
+
 ## Error Scenarios
 
 ### 1. Provider timeout
@@ -84,6 +88,15 @@ Expected behavior:
 - Re-open the circuit if probe requests fail.
 - Keep the user informed about payment status.
 
+### 4. Workshop canceled after successful payment
+If a workshop is canceled after students have already paid, the system must execute and record refunds.
+
+Expected behavior:
+
+- Trigger refund flow for successful payments.
+- Update `payments.status` to `REFUNDED` after provider confirmation.
+- Emit refund events for notification and reconciliation pipelines.
+
 ## Constraints
 
 | Constraint | Requirement |
@@ -93,6 +106,7 @@ Expected behavior:
 | Circuit breaker | Closed / Open / Half-Open states must be implemented |
 | Idempotency storage | Use Redis with a TTL |
 | Consistency | Successful payments must update PostgreSQL exactly once |
+| Refund traceability | Refunded transactions must be represented by `payments.status = REFUNDED` |
 | UX | The user must receive a clear pending or success response |
 
 ## Acceptance Criteria
@@ -102,3 +116,4 @@ Expected behavior:
 - The system opens the circuit after repeated provider failures.
 - Non-payment features continue to work during payment outages.
 - The payment state is correctly written to PostgreSQL on success.
+- Canceled paid workshops generate refund records with status `REFUNDED`.
