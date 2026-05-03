@@ -1,0 +1,3 @@
+Framework: React-Native
+Dự kiến: React Native cho mobile frontend
+Giao diện sẽ theo hướng component-based và có thể dùng template system phù hợp
