@@ -181,7 +181,7 @@ networks:
 | `DB_USER` | Database user | `workshop_user` | ✅ |
 | `DB_PASSWORD` | Database password (use strong password in production) | `SecurePass123!` | ✅ |
 
-**Connection String (for Prisma or other ORM):**
+**Connection String (for Knex or other database client):**
 ```
 postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}
 ```

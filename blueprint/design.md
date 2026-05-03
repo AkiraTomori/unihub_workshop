@@ -405,11 +405,11 @@ The project uses a JavaScript stack end-to-end: Node.js on the backend, React on
 |---|---|
 | REST API | Express |
 | Validation | Zod or Joi |
-| ORM | Prisma or TypeORM |
+| Query Builder + Migrations | Knex.js |
 | Security | Passport JWT or custom middleware |
 | Messaging | amqplib or a RabbitMQ wrapper |
 | Cache | ioredis |
-| Database Migration | Prisma Migrate or Knex migrations |
+| Database Migration | Knex migrations |
 | Testing | Jest + Supertest |
 | PDF Processing | pdf-parse or pdf-lib |
 | QR Generation / Scanning | qrcode and mobile camera libraries |
