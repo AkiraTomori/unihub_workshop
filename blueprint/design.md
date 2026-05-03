@@ -7,6 +7,10 @@ This architecture provides a practical balance between separation of concerns an
 
 The main components are the API Gateway, the Core API, the Payment API, the message broker, and a set of background workers. The client-facing flows are handled synchronously for immediate feedback, while expensive or slow tasks such as email delivery, AI document summarization, and CSV synchronization are offloaded to asynchronous workers through RabbitMQ.
 
+## Event Definitions
+
+RabbitMQ events are standardized in [events.md](events.md) so the Core API and workers always agree on exchange names, routing keys, and payload structure. The project uses a topic exchange pattern with an outbox-backed publish flow to avoid message loss.
+
 ## C4 Diagram
 
 ### Level 1 — System Context
@@ -42,8 +46,8 @@ flowchart LR
 ```mermaid
 flowchart TD
     subgraph Client_Apps ["Client Apps"]
-        web["Web App<br/>(React/Vue SPA)"]
-        mobile["Mobile App<br/>(Flutter)<br/>Includes SQLite Local DB"]
+        web["Web App<br/>(React SPA)"]
+        mobile["Mobile App<br/>(React Native)<br/>Includes SQLite Local DB"]
     end
 
     gateway["API Gateway<br/>(Nginx/Kong)<br/>- Rate Limiting<br/>- Auth Routing"]
@@ -124,7 +128,7 @@ PostgreSQL is the main source of truth because workshop registration, payment, a
 
 ### Core PostgreSQL Entities and Their Goals
 
-The design is centered on 11 core tables in PostgreSQL:
+The design is centered on 12 core tables in PostgreSQL:
 
 1. rooms: normalizes physical room information so that room capacity and layout changes can be applied once and reused by multiple workshops.
 2. workshops: stores the main event configuration, including time, capacity, pricing, and publication status.
@@ -137,6 +141,7 @@ The design is centered on 11 core tables in PostgreSQL:
 9. audit_logs: records who did what and when for dispute handling and administrative transparency.
 10. csv_sync_logs: stores the status of nightly legacy CSV imports so operators can review successful and failed rows.
 11. outbox_events: stores pending integration events before they are published to RabbitMQ, preventing message loss when the broker is temporarily unavailable.
+12. notifications: stores notification delivery records, message content, channel, recipient, and read status for user-facing alerts.
 
 ### PostgreSQL Table Structure
 
@@ -153,6 +158,7 @@ The most important columns for each table are summarized below.
 - audit_logs: `actor_id`, `entity_id`, `action`, `entity_type`, `old_payload`, `new_payload`.
 - csv_sync_logs: `file_name`, `status`, `total_rows`, `success_rows`, `error_details`.
 - outbox_events: `aggregate_id`, `event_type`, `payload`, `status`.
+- notifications: `user_id`, `channel`, `template`, `subject`, `recipient`, `status`, `read_at`.
 
 ### ERD Diagram
 ```mermaid
@@ -225,10 +231,12 @@ erDiagram
     NOTIFICATIONS {
         uuid id
         uuid user_id
-        varchar title
-        text content
-        enum type
-        boolean is_read
+        varchar channel
+        varchar template
+        varchar subject
+        varchar recipient
+        enum status
+        timestamp read_at
         timestamp created_at
         timestamp updated_at
     }
@@ -373,16 +381,16 @@ These structures exist only for high-speed concurrency control and are always re
 
 ## Suggested Technology Stack
 
-The project can be implemented with either a JavaScript-first stack or a Java-first stack. The table below shows the recommended technologies by layer so the team can keep the design consistent from proposal to implementation.
+The project uses a JavaScript stack end-to-end: Node.js on the backend, React on the web frontend, and React Native for mobile check-in workflows.
 
 | Layer | Recommended Technology | Purpose | Why It Fits |
 |---|---|---|---|
-| Frontend Web | React with TypeScript | Student and admin web interface | Large ecosystem, component reuse, and strong type safety for form-heavy screens |
-| Frontend Mobile | Flutter or React Native | Offline-capable check-in app | Supports local SQLite storage, QR scanning, and cross-platform delivery |
+| Frontend Web | React | Student and admin web interface | Large ecosystem, reusable components, and a good fit for dashboard-style screens |
+| Frontend Mobile | React Native | Offline-capable check-in app | Supports QR scanning, local SQLite storage, and cross-platform delivery |
 | API Gateway | Nginx or Kong | Routing, auth forwarding, rate limiting | Simple to configure and suitable for burst traffic protection |
-| Core Backend | Java with Spring Boot or Node.js with NestJS | Workshop, registration, session, and admin APIs | Both options support modular monolith structure and clean domain boundaries |
-| Payment Module | Java Spring Boot module or NestJS module | Payment orchestration and webhook handling | Easier to isolate retries, circuit breaker logic, and idempotency checks |
-| Background Workers | Java Spring Boot workers or Node.js worker processes | Email, CSV sync, AI summarization, outbox publishing | Works well with RabbitMQ and asynchronous job processing |
+| Core Backend | Node.js with Express | Workshop, registration, session, and admin APIs | Lightweight, familiar, and easy to keep as a modular monolith |
+| Payment Module | Node.js module | Payment orchestration and webhook handling | Fits the same runtime and keeps payment retries and idempotency centralized |
+| Background Workers | Node.js worker processes | Email, CSV sync, AI summarization, outbox publishing | Works well with RabbitMQ and asynchronous job processing |
 | Database | PostgreSQL | Main transactional storage | Strong ACID guarantees for registrations, payments, and audit logs |
 | Cache / Lock Store | Redis | Seat counters, locks, idempotency keys | Fast atomic operations for race-condition prevention |
 | Message Broker | RabbitMQ | Event delivery to workers | Reliable queue-based communication for the modular monolith |
@@ -391,27 +399,20 @@ The project can be implemented with either a JavaScript-first stack or a Java-fi
 | Notification Service | SendGrid or SMTP provider | Email delivery | Easy to integrate and reliable for confirmation messages |
 | Containerization | Docker and Docker Compose | Local development and demo environment | Matches the project scope and keeps setup reproducible |
 
-### Recommended Implementation Choice
-
-| Option | Backend Stack | Best For | Notes |
-|---|---|---|---|
-| Option A | Java + Spring Boot | Strong typing, mature transaction support, enterprise-style structure | Best if the team wants a strict modular monolith and clear service boundaries |
-| Option B | JavaScript / TypeScript + NestJS | Fast development, one language across frontend and backend | Best if the team prefers a full JavaScript workflow and rapid iteration |
-
 ### Suggested Project Libraries
 
-| Concern | Java Stack | JavaScript / TypeScript Stack |
-|---|---|---|
-| REST API | Spring Web | NestJS / Express |
-| Validation | Jakarta Validation | class-validator / Zod |
-| ORM | Spring Data JPA / Hibernate | Prisma / TypeORM |
-| Security | Spring Security + JWT | Passport JWT / custom guards |
-| Messaging | Spring for RabbitMQ | amqplib / NestJS microservices |
-| Cache | Spring Data Redis | ioredis |
-| Database Migration | Flyway | Prisma Migrate / Knex migrations |
-| Testing | JUnit 5 + Testcontainers | Jest + Supertest |
-| PDF Processing | Apache PDFBox | pdf-parse / pdf-lib |
-| QR Generation / Scanning | ZXing | qrcode / react-qr-reader / mobile camera plugin |
+| Concern | Node.js / JavaScript Stack |
+|---|---|
+| REST API | Express |
+| Validation | Zod or Joi |
+| ORM | Prisma or TypeORM |
+| Security | Passport JWT or custom middleware |
+| Messaging | amqplib or a RabbitMQ wrapper |
+| Cache | ioredis |
+| Database Migration | Prisma Migrate or Knex migrations |
+| Testing | Jest + Supertest |
+| PDF Processing | pdf-parse or pdf-lib |
+| QR Generation / Scanning | qrcode and mobile camera libraries |
 
 | Deployment Concern | Suggested Tooling |
 |---|---|
@@ -419,6 +420,31 @@ The project can be implemented with either a JavaScript-first stack or a Java-fi
 | Logs and troubleshooting | Structured JSON logs |
 | Config management | Environment variables and `.env` files |
 | CI validation | Unit tests, integration tests, linting, and migration checks |
+
+### Mobile Technology Stack (React Native)
+
+The mobile check-in app is built with React Native to support offline QR scanning and background synchronization. The stack prioritizes performance and reliable offline-first behavior.
+
+| Concern | Recommended Library | Purpose |
+|---|---|---|
+| **Framework** | React Native 0.72+ | Cross-platform mobile app for iOS and Android |
+| **Local Database** | WatermelonDB | Offline-first, reactive local storage optimized for thousands of records |
+| **QR Code Scanning** | react-native-camera or react-native-vision-camera | Camera integration and QR code detection |
+| **Network State** | @react-native-community/netinfo | Detect online/offline transitions and connection quality |
+| **Background Tasks** | react-native-background-fetch | Scheduled background sync without full app activation |
+| **Local Preferences** | @react-native-async-storage/async-storage | Store app settings and sync metadata |
+| **HTTP Client** | axios or native fetch | API calls to backend `/checkins/sync` endpoint |
+| **State Management** | Zustand or Redux Toolkit | Global sync status and offline indicators |
+| **UI Kit** | React Native Paper or Tamagui | Accessible, themed components for consistent UX |
+| **Date Handling** | date-fns or day.js | Parse and format timestamps for sync payloads |
+| **Testing** | Jest + @testing-library/react-native | Unit tests for database and sync logic |
+
+**Sync Strategy:**
+- **Foreground Sync:** Triggered automatically when network transitions from offline to online; shows real-time sync status.
+- **Background Sync:** Runs every 10 minutes via `react-native-background-fetch` to ensure pending scans reach the server.
+- **Manual Sync:** Users can tap "Sync Now" to force immediate synchronization.
+
+For detailed offline implementation and sync payload structure, see [checkin.md](specs/checkin.md#react-native-mobile-implementation).
 
 ## Access Control Design
 The system uses Role-Based Access Control with three primary roles. JWT is used for authentication, while authorization is enforced at both the API Gateway and the application layer.
@@ -626,6 +652,17 @@ Processing flow:
 5. If the same request is retried, the backend returns the previous successful result and skips duplicate processing.
 
 This design prevents double charging even if the client retries due to timeout, unstable network, or repeated webhook delivery from the payment provider.
+
+## Local Development & Deployment Infrastructure
+
+For detailed setup instructions, environment variables, Docker Compose configuration, and service orchestration, see [infrastructure.md](infrastructure.md).
+
+**Quick Reference:**
+- All services run in Docker containers via `docker-compose up -d`
+- PostgreSQL, Redis, RabbitMQ, and backend API are containerized
+- Environment variables are managed in `.env` (template provided in `.env.example`)
+- Mock payment keys enable testing without real charges
+- Health endpoints available at `/api/health` to verify all services are connected
 
 ## Important Technical Decisions (ADR)
 

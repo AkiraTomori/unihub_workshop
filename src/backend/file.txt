@@ -1,3 +1,4 @@
-Framework: Node.JS/FastAPI/Spring Boot
-Dự kiến: Node.JS (time gấp)
-Nhưng vấn đề là ở đầu năm thì thầy Tuấn yêu cầu là Java/C# ????
+Framework: Node.js
+Dự kiến: Node.js backend cho toàn bộ hệ thống
+Frontend: React
+Mobile: React Native

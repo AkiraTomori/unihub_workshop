@@ -5,6 +5,13 @@ This feature imports student data from the legacy system using nightly CSV files
 
 The system does not call a legacy API. Instead, a scheduled job reads the file as a stream, validates each row, and writes valid records into PostgreSQL using batch upsert logic. Invalid rows are isolated so they do not stop the entire import.
 
+## API Surface
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/admin/csv-sync/run` | Trigger a manual CSV import |
+| GET | `/admin/csv-sync-logs` | View import logs |
+
 ## Main Flow
 
 ```mermaid

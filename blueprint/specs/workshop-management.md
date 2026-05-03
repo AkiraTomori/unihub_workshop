@@ -5,6 +5,19 @@ This feature allows the Organizing Committee to create, update, cancel, and mana
 
 The PDF summary flow is asynchronous. The Core API stores the document metadata and publishes an event to RabbitMQ. The AI Worker then extracts the PDF content and calls Vertex AI to generate the summary.
 
+## API Surface
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/workshops` | List published workshops |
+| GET | `/workshops/{id}` | Get workshop details |
+| POST | `/admin/workshops` | Create workshop |
+| PUT | `/admin/workshops/{id}` | Update workshop |
+| DELETE | `/admin/workshops/{id}` | Cancel workshop |
+| POST | `/admin/documents` | Upload a workshop PDF |
+| GET | `/admin/documents/{id}` | Check summary processing status |
+| GET | `/admin/stats` | View statistics |
+
 ## Main Flow
 
 ```mermaid

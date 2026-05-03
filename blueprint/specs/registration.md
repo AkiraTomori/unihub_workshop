@@ -5,6 +5,14 @@ This feature handles workshop registration under heavy traffic and prevents over
 
 The API Gateway limits request bursts using Token Bucket rate limiting. The Core API reserves seats atomically in Redis using the `DECR` command before it writes the registration into PostgreSQL.
 
+## API Surface
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/registrations` | Create a registration |
+| GET | `/registrations/me` | List my registrations |
+| GET | `/registrations/{id}` | View registration details |
+
 ## Main Flow
 
 ```mermaid

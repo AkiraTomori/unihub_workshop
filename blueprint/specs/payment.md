@@ -5,6 +5,15 @@ This feature handles paid workshop checkout and protects the system from unstabl
 
 The payment flow uses a Circuit Breaker to isolate repeated external failures. It also uses Idempotency Keys so that retries from the client or payment provider cannot charge the student twice.
 
+## API Surface
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/payments` | Create a payment session |
+| POST | `/payments/webhook` | Receive gateway callback |
+| GET | `/payments/me` | View my payment history |
+| GET | `/payments/{id}` | View one payment |
+
 ## Main Flow
 
 ```mermaid

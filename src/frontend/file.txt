@@ -1,2 +1,3 @@
-Dự kiến: ReactJS (CSR) hoặc EJS/Handlebar (SSR)
-Giao diện thì có thể vibe hoặc đi kiếm templates
+Dự kiến: ReactJS cho web frontend
+Nếu có mobile: React Native
+Giao diện sẽ theo hướng component-based và có thể dùng template system phù hợp

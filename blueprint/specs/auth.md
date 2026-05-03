@@ -7,6 +7,15 @@ Authentication is based on JWT access tokens and refresh tokens stored in the `u
 
 The feature also covers session revocation and account lockout behavior when suspicious activity is detected.
 
+## API Surface
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/auth/login` | Sign in and issue JWT access/refresh tokens |
+| POST | `/auth/refresh` | Refresh an access token |
+| POST | `/auth/logout` | Revoke the current session |
+| GET | `/auth/me` | Return the current user profile |
+
 ## Main Flow
 
 ```mermaid

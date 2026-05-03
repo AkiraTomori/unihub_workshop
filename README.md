@@ -6,6 +6,47 @@ Trường Đại học A tổ chức “Tuần lễ kỹ năng và nghề nghi�
 
 Ban tổ chức muốn xây dựng hệ thống UniHub Workshop để số hóa toàn bộ quy trình, từ đăng ký đến check-in tại sự kiện.
 
+## Tài liệu kỹ thuật
+
+Tất cả các tài liệu thiết kế, kiến trúc hệ thống, và hướng dẫn triển khai được lưu trữ trong thư mục `blueprint/`:
+
+- **[proposal.md](blueprint/proposal.md)** — Đề xuất dự án, mục tiêu, phạm vi, và những rủi ro
+- **[design.md](blueprint/design.md)** — Kiến trúc hệ thống, sơ đồ C4, thiết kế cơ sở dữ liệu, công nghệ được sử dụng
+- **[events.md](blueprint/events.md)** — Danh mục sự kiện RabbitMQ, định nghĩa payload, quy ước trao đổi thông điệp
+- **[api-contract.md](blueprint/api-contract.md)** — Hợp đồng API HTTP cho frontend, mobile, và các dịch vụ ngoài
+- **[infrastructure.md](blueprint/infrastructure.md)** — Cấu hình biến môi trường, Docker Compose, và hướng dẫn triển khai cục bộ
+- **specs/** — Các tài liệu chi tiết về từng tính năng:
+  - [auth.md](blueprint/specs/auth.md) — Xác thực JWT và RBAC
+  - [registration.md](blueprint/specs/registration.md) — Đăng ký workshop và xử lý traffic cao
+  - [payment.md](blueprint/specs/payment.md) — Xử lý thanh toán với VNPay/MoMo
+  - [notification.md](blueprint/specs/notification.md) — Thông báo không đồng bộ qua Email
+  - [checkin.md](blueprint/specs/checkin.md) — Check-in offline trên mobile bằng React Native
+  - [ai-summary.md](blueprint/specs/ai-summary.md) — Tóm tắt PDF bằng Vertex AI
+  - [csv-sync.md](blueprint/specs/csv-sync.md) — Đồng bộ dữ liệu sinh viên từ hệ thống cũ
+  - [workshop-management.md](blueprint/specs/workshop-management.md) — Quản lý workshop
+
+### Cách bắt đầu nhanh
+
+```bash
+# Clone repository
+git clone <repo-url>
+cd unihub_workshop
+
+# Sao chép file cấu hình môi trường
+cp .env.example .env
+
+# Khởi động toàn bộ hạ tầng (PostgreSQL, Redis, RabbitMQ, Backend)
+docker-compose up -d
+
+# Kiểm tra trạng thái dịch vụ
+docker-compose ps
+
+# Xem log backend
+docker-compose logs -f backend
+```
+
+Chi tiết xem [infrastructure.md](blueprint/infrastructure.md).
+
 ## Người dùng
 
 | Nhóm | Mô tả |

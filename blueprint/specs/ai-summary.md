@@ -7,6 +7,13 @@ The AI summary flow is asynchronous by design. The web request only validates th
 
 The feature is intended to work safely even when the uploaded PDF is large, when the AI provider is slow, or when the external AI API temporarily fails.
 
+## API Surface
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/admin/documents` | Upload a PDF for AI summarization |
+| GET | `/admin/documents/{id}` | Check document summary status |
+
 ## Main Flow
 
 ```mermaid

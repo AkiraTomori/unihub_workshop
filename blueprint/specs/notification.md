@@ -5,6 +5,14 @@ This feature sends confirmation emails and QR-related notifications without slow
 
 The system uses the Transactional Outbox Pattern to safely record notification events in PostgreSQL and publish them to RabbitMQ later. A Notification Worker consumes those events and sends messages through SendGrid.
 
+## API Surface
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/notifications/me` | List my notifications |
+| PATCH | `/notifications/{id}/read` | Mark a notification as read |
+| POST | `/admin/notifications/replay` | Replay failed notifications |
+
 ## Main Flow
 
 ```mermaid

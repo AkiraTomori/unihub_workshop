@@ -87,3 +87,27 @@ Proposed Solution: Store-and-Forward Pattern using Local SQLite combined with De
 One-way Legacy Integration (Legacy CSV): The old system lacks an API; exported CSV files may contain errors or duplicates.
 
 Proposed Solution: Background ETL Worker applying Batch Upserts and Error Isolation to prevent interruptions to ongoing processes.
+
+## 6. Technology Stack
+
+The project uses a modern JavaScript stack end-to-end to maximize team productivity and code reuse across backend, web frontend, and mobile platforms.
+
+**Backend & Core Services:**
+- Node.js with Express for the modular monolith REST API
+- PostgreSQL for transactional storage with ACID guarantees
+- Redis for atomic seat counters and idempotency locks
+- RabbitMQ for asynchronous event-driven communication
+
+**Frontend (Web):**
+- React for the student and admin web interfaces
+
+**Mobile (Check-in App):**
+- React Native for cross-platform iOS and Android deployment
+- WatermelonDB for offline-first local storage optimized for React Native
+- Background sync capability to synchronize check-in data when connectivity is restored
+
+**Infrastructure:**
+- Docker and Docker Compose for containerized local development and demo deployment
+- Environment-based configuration for easy transition between development and production
+
+For detailed technology choices and library recommendations, see [design.md](design.md#suggested-technology-stack) and [checkin.md](specs/checkin.md#react-native-mobile-implementation).
