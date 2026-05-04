@@ -24,47 +24,62 @@ Local services (Redis, RabbitMQ) can be launched with: `docker-compose up -d`
 
 ## System Architecture Diagram (Hybrid Deployment)
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                   Hybrid Development Environment                        │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                 │
-│  │  Node.js     │  │  React Dev   │  │  React Native│                 │
-│  │  Backend     │  │  Server      │  │  Simulator   │                 │
-│  │  (Port 3000) │  │  (Port 3001) │  │  (Port 8081) │                 │
-│  └──────┬───────┘  └──────────────┘  └──────────────┘                 │
-│         │                                                              │
-│         └─────────────────────┬────────────────┐                      │
-│                               │                │                      │
-│           ┌───────────────────▼──────┐  ┌──────▼─────────┐            │
-│           │  LOCAL DOCKER COMPOSE    │  │  GOOGLE CLOUD  │            │
-│           │                          │  │   (Managed)    │            │
-│  ┌────────▼───────┐  ┌────────▼──┐  │  │                │            │
-│  │   Redis        │  │ RabbitMQ  │  │  │ ┌────────────┐ │            │
-│  │  (Port 6379)   │  │(Port 5672)│  │  │ │ Supabase   │ │            │
-│  │                │  │Adm:15672  │  │  │ │PostgreSQL  │ │            │
-│  └────────────────┘  └───────────┘  │  │ │ (managed)  │ │            │
-│           │                          │  │ └────────────┘ │            │
-│           └──────────────────────────┘  │                │            │
-│                                         │ ┌────────────┐ │            │
-│                                         │ │  Vertex AI │ │            │
-│                                         │ │(Gemini Fla)│ │            │
-│                                         │ └────────────┘ │            │
-│                                         │                │            │
-│                                         │ ┌────────────┐ │            │
-│                                         │ │Gmail SMTP  │ │            │
-│                                         │ │ (via app   │ │            │
-│                                         │ │ password)  │ │            │
-│                                         │ └────────────┘ │            │
-│                                         └────────────────┘            │
-│                                                                       │
-│  ┌─────────────────────────────────────────────────────┐             │
-│  │     File Storage (PDFs from admin)                  │             │
-│  │  Local: ./storage/uploads/ → /uploads/ (backend)   │             │
-│  └─────────────────────────────────────────────────────┘             │
-│                                                                       │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Dev_Environment ["Development Environment"]
+        direction TB
+        
+        subgraph Local_Runtime ["Local Runtime Services"]
+            direction LR
+            BE["Node.js Backend<br/>(Port 3000)"]
+            WEB["React Dev Server<br/>(Port 3001)"]
+            MOB["React Native Simulator<br/>(Port 8081)"]
+        end
+
+        subgraph Infrastructure ["Infrastructure Layer"]
+            direction LR
+            subgraph Docker_Compose ["Local Docker Compose"]
+                direction TB
+                REDIS[("Redis<br/>(Port 6379)")]
+                MQ["RabbitMQ<br/>(Port 5672)<br/>Admin: 15672"]
+            end
+
+            subgraph Google_Cloud ["Google Cloud (Managed)"]
+                direction TB
+                DB[("Supabase<br/>PostgreSQL")]
+                AI["Vertex AI<br/>(Gemini Flash)"]
+                SMTP["Gmail SMTP<br/>(App Password)"]
+            end
+        end
+
+        subgraph Storage ["File Storage"]
+            FS["PDF Storage<br/>Local: ./storage/uploads/<br/>Mount: /uploads/ (backend)"]
+        end
+    end
+
+    %% Connections
+    BE ==> REDIS
+    BE ==> MQ
+    BE ==> DB
+    BE ==> AI
+    BE ==> SMTP
+    BE -.-> FS
+    WEB ==> BE
+    MOB ==> BE
+
+    style Dev_Environment fill:#ffffff,stroke:#333,stroke-width:2px,color:#333
+    style Infrastructure fill:#ffffff,stroke:#333,stroke-width:2px,color:#333
+    style Storage fill:#ffffff,stroke:#333,stroke-width:2px,color:#333
+    
+    style Docker_Compose fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b
+    style Google_Cloud fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100
+    style Local_Runtime fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#4a148c
+    
+    style BE fill:#4CAF50,color:#fff,font-weight:bold
+    style DB fill:#FF9800,color:#fff,font-weight:bold
+    style AI fill:#2196F3,color:#fff,font-weight:bold
+
+    linkStyle default stroke:#333,stroke-width:2px;
 ```
 
 ## Docker Compose Configuration
