@@ -38,16 +38,16 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 
 | Method | Endpoint | Purpose | Roles | Returns |
 |---|---|---|---|---|
-| POST | `/auth/login` | Sign in and issue tokens | Public | `access_token`, `refresh_token`, `expires_in`, `user { id, full_name, email, role, student_code, is_active }` |
-| POST | `/auth/refresh` | Refresh access token | Public with refresh token | `access_token`, `expires_in` |
-| POST | `/auth/logout` | Revoke current session | Authenticated | `revoked`, `session_id` |
-| GET | `/auth/me` | Return current user profile | Authenticated | `id`, `full_name`, `email`, `role`, `student_code`, `is_active`, `last_synced_at` |
+| POST | `/auth/login` | Sign in and issue tokens | Public | `accessToken`, `user { id, email, full_name, role, student_code, is_active }` (refreshToken in HttpOnly cookie) |
+| POST | `/auth/refresh` | Refresh access token | Public with refresh token | `accessToken` |
+| POST | `/auth/logout` | Revoke current session | Authenticated | `message` |
+| GET | `/auth/me` | Return current user profile | Authenticated | `id`, `email`, `full_name`, `role`, `student_code`, `is_active`, `created_at` |
 
 ### Login Request
 
 ```json
 {
-  "username": "21127001",
+  "email": "student@example.com",
   "password": "secret123"
 }
 ```
@@ -56,15 +56,14 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 
 ```json
 {
-  "success": true,
+  "status": "SUCCESS",
+  "message": "Login successful",
   "data": {
-    "access_token": "eyJhbGciOi...",
-    "refresh_token": "9ad3d0f2-5f2b-4d2d-8b0c-7a0b5be0e9d1",
-    "expires_in": 3600,
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "user": {
-      "id": "7f3f7e73-0d58-4d0a-9e8c-0db92a50c2f0",
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "email": "student@example.com",
       "full_name": "Nguyen Van A",
-      "email": "a@example.com",
       "role": "STUDENT",
       "student_code": "21127001",
       "is_active": true
@@ -73,14 +72,16 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 }
 ```
 
+**Note**: `refreshToken` is set as HttpOnly cookie automatically and cannot be accessed from JavaScript.
+
 ### Refresh Response
 
 ```json
 {
-  "success": true,
+  "status": "SUCCESS",
+  "message": "Token refreshed successfully",
   "data": {
-    "access_token": "eyJhbGciOi...",
-    "expires_in": 3600
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
@@ -89,10 +90,10 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 
 ```json
 {
-  "success": true,
+  "status": "SUCCESS",
+  "message": "Logout successful",
   "data": {
-    "revoked": true,
-    "session_id": "9ad3d0f2-5f2b-4d2d-8b0c-7a0b5be0e9d1"
+    "message": "Logged out successfully"
   }
 }
 ```
@@ -101,15 +102,16 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 
 ```json
 {
-  "success": true,
+  "status": "SUCCESS",
+  "message": "User profile retrieved",
   "data": {
-    "id": "7f3f7e73-0d58-4d0a-9e8c-0db92a50c2f0",
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "student@example.com",
     "full_name": "Nguyen Van A",
-    "email": "a@example.com",
     "role": "STUDENT",
     "student_code": "21127001",
     "is_active": true,
-    "last_synced_at": "2026-04-30T02:00:00Z"
+    "created_at": "2026-01-15T10:30:00Z"
   }
 }
 ```
