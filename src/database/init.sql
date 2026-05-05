@@ -4,6 +4,36 @@
 -- Version: 1.0.0
 -- =================================================================================
 
+-- 0. CLEAN UP PREVIOUS DATA (Reset DB)
+-- =================================================================================
+-- Xóa toàn bộ các bảng cũ (CASCADE để tự động xóa luôn các Khóa ngoại đang ràng buộc)
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS outbox_events CASCADE;
+DROP TABLE IF EXISTS csv_sync_logs CASCADE;
+DROP TABLE IF EXISTS audit_logs CASCADE;
+DROP TABLE IF EXISTS checkins CASCADE;
+DROP TABLE IF EXISTS payments CASCADE;
+DROP TABLE IF EXISTS registrations CASCADE;
+DROP TABLE IF EXISTS documents CASCADE;
+DROP TABLE IF EXISTS workshops CASCADE;
+DROP TABLE IF EXISTS user_sessions CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS rooms CASCADE;
+
+-- Xóa các ENUM Type cũ
+DROP TYPE IF EXISTS user_role_enum CASCADE;
+DROP TYPE IF EXISTS workshop_status_enum CASCADE;
+DROP TYPE IF EXISTS document_status_enum CASCADE;
+DROP TYPE IF EXISTS registration_status_enum CASCADE;
+DROP TYPE IF EXISTS payment_status_enum CASCADE;
+DROP TYPE IF EXISTS sync_status_enum CASCADE;
+DROP TYPE IF EXISTS outbox_status_enum CASCADE;
+DROP TYPE IF EXISTS notification_status_enum CASCADE;
+DROP TYPE IF EXISTS notification_channel_enum CASCADE;
+
+-- Xóa hàm Trigger cũ
+DROP FUNCTION IF EXISTS trigger_set_timestamp() CASCADE;
+
 -- 1. UTILITY FUNCTIONS & EXTENSIONS
 -- =================================================================================
 -- Cài đặt extension để sinh UUIDv4
