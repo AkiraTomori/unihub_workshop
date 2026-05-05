@@ -34,10 +34,10 @@ VALUES
   ('22222222-2222-2222-2222-222222222222', 'S2024001', 'alice@student.unihub.test', crypt('StudentPass!1', gen_salt('bf', 12)), 'Alice Nguyen', 'STUDENT', TRUE),
   ('33333333-3333-3333-3333-333333333333', 'S2024002', 'bob@student.unihub.test', crypt('StudentPass!2', gen_salt('bf', 12)), 'Bob Tran', 'STUDENT', FALSE),
   -- user-provided admin & staff & students (precomputed bcrypt hash = password123)
-  ('aaaaa111-aaaa-4aaa-8aaa-aaaaaaaaaaaa', NULL, 'admin@unihub.edu.vn', '$2a$12$R9h/cIPz0gi.URNNX3nc2OsRXlz2Z.v6l3rL61nE2qjM.Q.h1Z5x6', 'Ban Tổ Chức', 'ADMIN', TRUE),
-  ('bbbbb111-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'STAFF01', 'checker1@unihub.edu.vn', '$2a$12$R9h/cIPz0gi.URNNX3nc2OsRXlz2Z.v6l3rL61nE2qjM.Q.h1Z5x6', 'Nhân sự Cửa A', 'CHECKER', TRUE),
-  ('ccccc111-cccc-4ccc-8ccc-cccccccccccc', '21127001', 'huy.thai@student.edu.vn', '$2a$12$R9h/cIPz0gi.URNNX3nc2OsRXlz2Z.v6l3rL61nE2qjM.Q.h1Z5x6', 'Thái Minh Huy', 'STUDENT', TRUE),
-  ('ddddd111-dddd-4ddd-8ddd-dddddddddddd', '21127002', 'tuan.tran@student.edu.vn', '$2a$12$R9h/cIPz0gi.URNNX3nc2OsRXlz2Z.v6l3rL61nE2qjM.Q.h1Z5x6', 'Trần Anh Tuấn', 'STUDENT', FALSE)
+  ('aaaaa111-aaaa-4aaa-8aaa-aaaaaaaaaaaa', NULL, 'admin@unihub.edu.vn', '$2b$12$fBpdUjhyplAM6z9MXiummOxaiDrwVB3ZboFSbKFL8UmKimHEgFz3W', 'Ban Tổ Chức', 'ADMIN', TRUE),
+  ('bbbbb111-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'STAFF01', 'checker1@unihub.edu.vn', '$2b$12$fBpdUjhyplAM6z9MXiummOxaiDrwVB3ZboFSbKFL8UmKimHEgFz3W', 'Nhân sự Cửa A', 'CHECKER', TRUE),
+  ('ccccc111-cccc-4ccc-8ccc-cccccccccccc', '21127001', 'huy.thai@student.edu.vn', '$2b$12$fBpdUjhyplAM6z9MXiummOxaiDrwVB3ZboFSbKFL8UmKimHEgFz3W', 'Thái Minh Huy', 'STUDENT', TRUE),
+  ('ddddd111-dddd-4ddd-8ddd-dddddddddddd', '21127002', 'tuan.tran@student.edu.vn', '$2b$12$fBpdUjhyplAM6z9MXiummOxaiDrwVB3ZboFSbKFL8UmKimHEgFz3W', 'Trần Anh Tuấn', 'STUDENT', FALSE)
 ON CONFLICT DO NOTHING;
 
 -- -------------------------
