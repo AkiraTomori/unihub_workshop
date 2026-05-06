@@ -27,6 +27,7 @@ export default function App() {
   const [token, setToken] = useState("");
   const [workshops, setWorkshops] = useState([]);
   const [myRegistrations, setMyRegistrations] = useState([]);
+  const [myNotifications, setMyNotifications] = useState([]);
   const [sessionMessage, setSessionMessage] = useState("Please sign in.");
   const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
   const [reloadFlag, setReloadFlag] = useState(0);
@@ -51,11 +52,16 @@ export default function App() {
           setWorkshopPagination(null);
         }
         if (role === "STUDENT") {
-          const registrations = await api.getMyRegistrations(token);
+          const [registrations, notifications] = await Promise.all([
+            api.getMyRegistrations(token),
+            api.getMyNotifications(token)
+          ]);
           if (!mounted) return;
           setMyRegistrations(registrations);
+          setMyNotifications(notifications);
         } else {
           setMyRegistrations([]);
+          setMyNotifications([]);
         }
       } catch (error) {
         if (!mounted) return;
@@ -140,6 +146,7 @@ export default function App() {
               workshops={workshops}
               token={token}
               myRegistrations={myRegistrations}
+              notifications={myNotifications}
               pagination={workshopPagination}
               onPageChange={goToWorkshopPage}
               onWorkshopsChanged={reloadWorkshops}

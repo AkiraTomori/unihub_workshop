@@ -29,8 +29,15 @@ export const api = {
   getMyRegistrations(token) {
     return request("/registrations/me", { token });
   },
-  checkoutPayment(token, registrationId, idempotencyKey) {
-    return request("/payments/checkout", { token, method: "POST", body: { registrationId, idempotencyKey } });
+  getMyNotifications(token) {
+    return request("/notifications/me", { token });
+  },
+  checkoutPayment(token, registrationId, idempotencyKey, simulateResult) {
+    return request("/payments/checkout", {
+      token,
+      method: "POST",
+      body: { registrationId, idempotencyKey, ...(simulateResult ? { simulateResult } : {}) }
+    });
   },
   createWorkshop(token, payload) {
     return request("/admin/workshops", { token, method: "POST", body: payload });

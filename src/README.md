@@ -29,3 +29,13 @@ flutter run
 ```
 
 Set backend URL in `src/mobile/lib/services/api_client.dart` (`ApiClient.baseUrl`) for emulator/device networking.
+
+## Mobile React Native (`src/mobile-rn`)
+
+```bash
+cd src/mobile-rn
+npm install
+npm run start
+```
+
+Set backend URL in `src/mobile-rn/src/api/client.js`.

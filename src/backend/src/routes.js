@@ -2,9 +2,14 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { authRequired, requireRole, signQrCode, signToken, verifyQrCode } from "./auth.js";
-import { query } from "./supabase.js";
+import { db, query } from "./supabase.js";
 
 const router = Router();
+const paymentCircuit = {
+  state: "CLOSED",
+  failureCount: 0,
+  openedUntilMs: 0
+};
 
 router.get("/health", (_, res) => res.json({ ok: true }));
 
@@ -63,21 +68,87 @@ router.get("/workshops", authRequired, async (req, res) => {
 });
 
 router.post("/registrations", authRequired, requireRole("STUDENT"), async (req, res) => {
+  const client = await db.connect();
   try {
     const schema = z.object({ workshopId: z.string().uuid() });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid payload" });
-    const result = await query("select register_workshop($1::uuid, $2::uuid) as data", [parsed.data.workshopId, req.user.sub]);
-    const registration = result.rows[0].data;
-    const qrCode = signQrCode({
-      registrationId: registration.id,
-      workshopId: registration.workshop_id,
-      studentId: registration.student_id
+
+    await client.query("begin");
+    const duplicateCheck = await client.query(
+      "select id, status, qr_code from registrations where workshop_id = $1::uuid and student_id = $2::uuid limit 1",
+      [parsed.data.workshopId, req.user.sub]
+    );
+    if (duplicateCheck.rows[0]) {
+      await client.query("rollback");
+      return res.status(409).json({ message: "Student already registered for this workshop" });
+    }
+
+    const workshopResult = await client.query("select id, title, seats_left, fee from workshops where id = $1::uuid for update", [
+      parsed.data.workshopId
+    ]);
+    const workshop = workshopResult.rows[0];
+    if (!workshop) {
+      await client.query("rollback");
+      return res.status(404).json({ message: "Workshop not found" });
+    }
+    if (workshop.seats_left <= 0) {
+      await client.query("rollback");
+      return res.status(409).json({ message: "Workshop sold out" });
+    }
+
+    await client.query("update workshops set seats_left = seats_left - 1 where id = $1::uuid", [parsed.data.workshopId]);
+    const status = Number(workshop.fee) > 0 ? "PENDING_PAYMENT" : "CONFIRMED";
+    const insertResult = await client.query(
+      `
+      insert into registrations(workshop_id, student_id, status, qr_code)
+      values ($1::uuid, $2::uuid, $3::text, $4::text)
+      returning *
+      `,
+      [parsed.data.workshopId, req.user.sub, status, ""]
+    );
+    const registration = insertResult.rows[0];
+
+    let qrCode = null;
+    if (status === "CONFIRMED") {
+      qrCode = signQrCode({
+        registrationId: registration.id,
+        workshopId: registration.workshop_id,
+        studentId: registration.student_id
+      });
+      await client.query("update registrations set qr_code = $1 where id = $2::uuid", [qrCode, registration.id]);
+      await client.query(
+        `
+        insert into outbox_events(event_type, aggregate_id, payload, status)
+        values ('REGISTRATION_CONFIRMED', $1::uuid, $2::jsonb, 'PENDING')
+        `,
+        [
+          registration.id,
+          JSON.stringify({
+            registrationId: registration.id,
+            workshopId: registration.workshop_id,
+            studentId: registration.student_id,
+            workshopTitle: workshop.title,
+            qrCode
+          })
+        ]
+      );
+    }
+
+    await client.query("commit");
+    return res.json({
+      id: registration.id,
+      workshop_id: registration.workshop_id,
+      student_id: registration.student_id,
+      status,
+      requires_payment: status === "PENDING_PAYMENT",
+      qr_code: qrCode
     });
-    await query("update registrations set qr_code = $1 where id = $2::uuid", [qrCode, registration.id]);
-    return res.json({ ...registration, qr_code: qrCode });
   } catch (error) {
+    await client.query("rollback");
     return res.status(400).json({ message: error.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -107,21 +178,141 @@ router.get("/registrations/me", authRequired, requireRole("STUDENT"), async (req
   }
 });
 
+router.get("/notifications/me", authRequired, requireRole("STUDENT"), async (req, res) => {
+  try {
+    const result = await query(
+      `
+      select id, title, message, channel, status, created_at
+      from notifications
+      where user_id = $1::uuid
+      order by created_at desc
+      limit 30
+      `,
+      [req.user.sub]
+    );
+    return res.json(result.rows);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 router.post("/payments/checkout", authRequired, requireRole("STUDENT"), async (req, res) => {
+  const now = Date.now();
   try {
     const schema = z.object({
       registrationId: z.string().uuid(),
-      idempotencyKey: z.string().min(8)
+      idempotencyKey: z.string().min(8),
+      simulateResult: z.enum(["success", "timeout", "failure"]).optional()
     });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid payload" });
 
-    const result = await query("select process_payment($1::uuid, $2::uuid, $3::text) as data", [
-      parsed.data.registrationId,
-      req.user.sub,
+    if (paymentCircuit.state === "OPEN" && paymentCircuit.openedUntilMs > now) {
+      return res.status(202).json({
+        status: "PENDING_PAYMENT",
+        circuitState: "OPEN",
+        message: "Payment provider is temporarily unavailable. Please retry later."
+      });
+    }
+    if (paymentCircuit.state === "OPEN" && paymentCircuit.openedUntilMs <= now) {
+      paymentCircuit.state = "HALF_OPEN";
+    }
+
+    const existingPayment = await query("select id, status, registration_id from payments where idempotency_key = $1::text limit 1", [
       parsed.data.idempotencyKey
     ]);
-    return res.json(result.rows[0].data);
+    if (existingPayment.rows[0]) {
+      const regResult = await query("select id, status, qr_code from registrations where id = $1::uuid", [
+        existingPayment.rows[0].registration_id
+      ]);
+      const reg = regResult.rows[0];
+      return res.json({
+        status: reg?.status ?? "PENDING_PAYMENT",
+        reused: true,
+        paymentId: existingPayment.rows[0].id,
+        qrCode: reg?.qr_code || null
+      });
+    }
+
+    const registrationResult = await query(
+      `
+      select r.id, r.status, r.qr_code, r.workshop_id, r.student_id, w.fee, w.title
+      from registrations r
+      join workshops w on w.id = r.workshop_id
+      where r.id = $1::uuid and r.student_id = $2::uuid
+      limit 1
+      `,
+      [parsed.data.registrationId, req.user.sub]
+    );
+    const registration = registrationResult.rows[0];
+    if (!registration) return res.status(404).json({ message: "Registration not found" });
+    if (registration.status === "CONFIRMED") {
+      return res.json({
+        status: "CONFIRMED",
+        reused: true,
+        qrCode: registration.qr_code || null
+      });
+    }
+
+    const mode = parsed.data.simulateResult || "success";
+    const providerSuccess = mode === "success";
+    const paymentStatus = providerSuccess ? "SUCCESS" : "PENDING";
+    const amount = Number(registration.fee || 0);
+
+    const paymentResult = await query(
+      `
+      insert into payments (registration_id, student_id, idempotency_key, amount, status)
+      values ($1::uuid, $2::uuid, $3::text, $4::int, $5::text)
+      returning id, status
+      `,
+      [parsed.data.registrationId, req.user.sub, parsed.data.idempotencyKey, amount, paymentStatus]
+    );
+
+    if (!providerSuccess) {
+      paymentCircuit.failureCount += 1;
+      if (paymentCircuit.failureCount >= 3) {
+        paymentCircuit.state = "OPEN";
+        paymentCircuit.openedUntilMs = now + 30000;
+      }
+      return res.status(202).json({
+        status: "PENDING_PAYMENT",
+        circuitState: paymentCircuit.state,
+        paymentId: paymentResult.rows[0].id,
+        message: "Payment timeout/failure. Registration remains pending."
+      });
+    }
+
+    paymentCircuit.failureCount = 0;
+    paymentCircuit.state = "CLOSED";
+
+    const qrCode = signQrCode({
+      registrationId: registration.id,
+      workshopId: registration.workshop_id,
+      studentId: registration.student_id
+    });
+    await query("update registrations set status = 'CONFIRMED', qr_code = $1 where id = $2::uuid", [qrCode, registration.id]);
+    await query(
+      `
+      insert into outbox_events(event_type, aggregate_id, payload, status)
+      values ('REGISTRATION_CONFIRMED', $1::uuid, $2::jsonb, 'PENDING')
+      `,
+      [
+        registration.id,
+        JSON.stringify({
+          registrationId: registration.id,
+          workshopId: registration.workshop_id,
+          studentId: registration.student_id,
+          workshopTitle: registration.title,
+          qrCode
+        })
+      ]
+    );
+
+    return res.json({
+      status: "CONFIRMED",
+      paymentId: paymentResult.rows[0].id,
+      qrCode
+    });
   } catch (error) {
     return res.status(400).json({ message: error.message });
   }

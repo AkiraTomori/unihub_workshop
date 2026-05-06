@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import { assertConfig, config } from "./config.js";
+import { startNotificationWorker } from "./notificationWorker.js";
 import routes from "./routes.js";
 
 assertConfig();
@@ -22,4 +23,11 @@ app.use((err, _req, res, _next) => {
 
 app.listen(config.port, () => {
   console.log(`API running on http://localhost:${config.port}`);
+});
+
+const stopWorker = startNotificationWorker({ intervalMs: 5000 });
+
+process.on("SIGINT", () => {
+  stopWorker();
+  process.exit(0);
 });

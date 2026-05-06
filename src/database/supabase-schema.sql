@@ -72,6 +72,33 @@ create table if not exists csv_sync_logs (
   ran_at timestamptz not null default now()
 );
 
+create table if not exists outbox_events (
+  id uuid primary key default gen_random_uuid(),
+  event_type text not null,
+  aggregate_id uuid,
+  payload jsonb not null,
+  status text not null default 'PENDING',
+  retry_count int not null default 0,
+  last_error text,
+  created_at timestamptz not null default now(),
+  published_at timestamptz
+);
+
+create index if not exists idx_outbox_events_status_created_at on outbox_events(status, created_at);
+
+create table if not exists notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references app_users(id),
+  title text not null,
+  message text not null,
+  channel text not null default 'IN_APP',
+  status text not null default 'SENT',
+  outbox_event_id uuid references outbox_events(id),
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists uniq_notifications_outbox_channel on notifications(outbox_event_id, channel);
+
 create or replace function register_workshop(p_workshop_id uuid, p_student_id uuid)
 returns json
 language plpgsql
