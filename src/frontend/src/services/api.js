@@ -1,36 +1,106 @@
+import { initialWorkshops } from "../data/workshops";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
 
 async function request(path, { token, method = "GET", body } = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     body: body ? JSON.stringify(body) : undefined
   });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || "Request failed");
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
   }
-  return data;
+
+  if (!response.ok) {
+    const error = new Error(payload?.message || "Request failed");
+    error.status = response.status;
+    throw error;
+  }
+
+  return payload;
+}
+
+function toFrontendUser(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    studentCode: user.student_code || null,
+    fullName: user.full_name || ""
+  };
 }
 
 export const api = {
-  login(email, password) {
-    return request("/auth/login", { method: "POST", body: { email, password } });
+  async login(email, password) {
+    const response = await request("/auth/login", { method: "POST", body: { email, password } });
+    return {
+      token: response?.data?.accessToken || "",
+      user: toFrontendUser(response?.data?.user)
+    };
   },
-  getWorkshops(token, { page = 1, pageSize = 10 } = {}) {
-    return request(`/workshops?page=${page}&pageSize=${pageSize}`, { token });
+  async register({ email, password, fullName, studentCode }) {
+    const response = await request("/auth/register", {
+      method: "POST",
+      body: {
+        email,
+        password,
+        full_name: fullName,
+        student_code: studentCode || null
+      }
+    });
+    return {
+      user: toFrontendUser(response?.data?.user)
+    };
+  },
+  async refreshToken() {
+    const response = await request("/auth/refresh", { method: "POST" });
+    return response?.data?.accessToken || "";
+  },
+  async getProfile(token) {
+    const response = await request("/auth/me", { token });
+    return toFrontendUser(response?.data);
+  },
+  async logout(token) {
+    await request("/auth/logout", { token, method: "POST" });
+  },
+  async getWorkshops(token, { page = 1, pageSize = 10 } = {}) {
+    try {
+      return await request(`/workshops?page=${page}&pageSize=${pageSize}`, { token });
+    } catch (error) {
+      if (error.status === 404) {
+        return initialWorkshops;
+      }
+      throw error;
+    }
   },
   registerWorkshop(token, workshopId) {
     return request("/registrations", { token, method: "POST", body: { workshopId } });
   },
-  getMyRegistrations(token) {
-    return request("/registrations/me", { token });
+  async getMyRegistrations(token) {
+    try {
+      return await request("/registrations/me", { token });
+    } catch (error) {
+      if (error.status === 404) return [];
+      throw error;
+    }
   },
-  getMyNotifications(token) {
-    return request("/notifications/me", { token });
+  async getMyNotifications(token) {
+    try {
+      return await request("/notifications/me", { token });
+    } catch (error) {
+      if (error.status === 404) return [];
+      throw error;
+    }
   },
   checkoutPayment(token, registrationId, idempotencyKey, simulateResult) {
     return request("/payments/checkout", {

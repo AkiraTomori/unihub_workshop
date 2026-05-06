@@ -3,6 +3,12 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { config } from './config/config.js';
 import authRouter from './routers/auth.router.js';
+import workshopRouter from './routers/workshop.router.js';
+import registrationRouter from './routers/registration.router.js';
+import notificationRouter from './routers/notification.router.js';
+import paymentRouter from './routers/payment.router.js';
+import adminRouter from './routers/admin.router.js';
+import checkinRouter from './routers/checkin.router.js';
 
 const app = express();
 
@@ -32,6 +38,12 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRouter);
+app.use('/api/workshops', workshopRouter);
+app.use('/api/registrations', registrationRouter);
+app.use('/api/notifications', notificationRouter);
+app.use('/api/payments', paymentRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/checkins', checkinRouter);
 
 // 404 Handler
 app.use((req, res) => {

@@ -1,9 +1,18 @@
 import { useState } from "react";
 import QRCode from "react-qr-code";
-import { Badge, Card } from "../components/ui";
+import { Badge, Card, Spinner } from "../components/ui";
 import { api } from "../services/api";
 
-export default function StudentPage({ workshops, token, myRegistrations, notifications, pagination, onPageChange, onWorkshopsChanged }) {
+export default function StudentPage({
+  workshops,
+  token,
+  myRegistrations,
+  notifications,
+  pagination,
+  onPageChange,
+  onWorkshopsChanged,
+  loading
+}) {
   const [selected, setSelected] = useState(null);
   const [notice, setNotice] = useState("No recent notifications");
   const [submittingWorkshopId, setSubmittingWorkshopId] = useState("");
@@ -146,9 +155,16 @@ export default function StudentPage({ workshops, token, myRegistrations, notific
                 type="button"
                 onClick={() => processPayment("success")}
                 disabled={processingPayment}
-                className="rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white disabled:bg-blue-400"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white disabled:bg-blue-400"
               >
-                {processingPayment ? "Processing..." : "Pay Now"}
+                {processingPayment ? (
+                  <>
+                    <Spinner />
+                    Processing...
+                  </>
+                ) : (
+                  "Pay Now"
+                )}
               </button>
               <button
                 type="button"
@@ -174,7 +190,15 @@ export default function StudentPage({ workshops, token, myRegistrations, notific
         <Card>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-lg font-semibold">Workshop Catalog</h3>
-            <Badge tone="blue">Real-time seats UI</Badge>
+            <div className="flex items-center gap-2">
+              {loading ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
+                  <Spinner className="h-3 w-3 border-blue-300 border-t-blue-700" />
+                  Loading...
+                </span>
+              ) : null}
+              <Badge tone="blue">Real-time seats UI</Badge>
+            </div>
           </div>
           <div className="space-y-3">
             {sortedWorkshops.map((w) => (
@@ -200,11 +224,16 @@ export default function StudentPage({ workshops, token, myRegistrations, notific
                     <p className="mb-2 text-sm font-semibold">{w.fee === 0 ? "Free" : `${w.fee.toLocaleString()} VND`}</p>
                     <button
                       onClick={() => requestRegisterConfirmation(w)}
-                      className="rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"
+                      className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"
                       disabled={w.seatsLeft <= 0 || registeredWorkshopIds.has(w.id) || submittingWorkshopId === w.id}
                     >
                       {submittingWorkshopId === w.id
-                        ? "Registering..."
+                        ? (
+                          <>
+                            <Spinner />
+                            Registering...
+                          </>
+                        )
                         : w.seatsLeft <= 0
                         ? "Sold Out"
                         : registrationByWorkshopId.get(w.id)?.status === "PENDING_PAYMENT"

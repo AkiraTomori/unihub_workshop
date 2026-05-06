@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import AppHeader from "./components/AppHeader";
 import AuthPanel from "./components/AuthPanel";
+import { FullScreenLoader } from "./components/ui";
 import AdminPage from "./pages/AdminPage";
 import StudentPage from "./pages/StudentPage";
 import { api } from "./services/api";
+import { initialWorkshops } from "./data/workshops";
 
 function mapWorkshop(record) {
   return {
@@ -29,18 +31,47 @@ export default function App() {
   const [myRegistrations, setMyRegistrations] = useState([]);
   const [myNotifications, setMyNotifications] = useState([]);
   const [sessionMessage, setSessionMessage] = useState("Please sign in.");
-  const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
+  const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [reloadFlag, setReloadFlag] = useState(0);
   const [workshopPage, setWorkshopPage] = useState(1);
   const [workshopPageSize] = useState(10);
   const [workshopPagination, setWorkshopPagination] = useState(null);
+  const [isHydratingSession, setIsHydratingSession] = useState(true);
+  const [isLoadingBackendData, setIsLoadingBackendData] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const role = authUser?.role || "";
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function hydrateSession() {
+      try {
+        const refreshedToken = await api.refreshToken();
+        if (!refreshedToken) return;
+        const user = await api.getProfile(refreshedToken);
+        if (!mounted || !user) return;
+        setToken(refreshedToken);
+        setAuthUser(user);
+        setSessionMessage(`Signed in as ${user.fullName} (${user.role})`);
+      } catch {
+        // No existing authenticated session in cookie.
+      } finally {
+        if (mounted) setIsHydratingSession(false);
+      }
+    }
+
+    hydrateSession();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!token) return;
     let mounted = true;
     async function loadWorkshops() {
+      if (mounted) setIsLoadingBackendData(true);
       try {
         const workshopResult = await api.getWorkshops(token, { page: workshopPage, pageSize: workshopPageSize });
         if (!mounted) return;
@@ -57,15 +88,18 @@ export default function App() {
             api.getMyNotifications(token)
           ]);
           if (!mounted) return;
-          setMyRegistrations(registrations);
-          setMyNotifications(notifications);
+          setMyRegistrations(Array.isArray(registrations) ? registrations : registrations?.data || []);
+          setMyNotifications(Array.isArray(notifications) ? notifications : notifications?.data || []);
         } else {
           setMyRegistrations([]);
           setMyNotifications([]);
         }
       } catch (error) {
         if (!mounted) return;
-        setSessionMessage(error.message);
+        setWorkshops(initialWorkshops);
+        setSessionMessage(error.message || "Could not load workshop data.");
+      } finally {
+        if (mounted) setIsLoadingBackendData(false);
       }
     }
     loadWorkshops();
@@ -84,8 +118,11 @@ export default function App() {
 
   async function handleLogin(email, password) {
     try {
-      setIsSubmittingLogin(true);
+      setIsSubmittingAuth(true);
       const auth = await api.login(email, password);
+      if (!auth?.token || !auth?.user) {
+        throw new Error("Invalid login response from server");
+      }
       setToken(auth.token);
       setAuthUser(auth.user);
       setSessionMessage(`Signed in as ${auth.user.fullName} (${auth.user.role})`);
@@ -98,23 +135,55 @@ export default function App() {
     } catch (error) {
       setSessionMessage(error.message);
     } finally {
-      setIsSubmittingLogin(false);
+      setIsSubmittingAuth(false);
     }
   }
 
-  function handleLogout() {
-    setToken("");
-    setAuthUser(null);
-    setWorkshops([]);
-    setSessionMessage("Please sign in.");
-    navigate("/login");
+  async function handleRegister({ fullName, studentCode, email, password }) {
+    try {
+      setIsSubmittingAuth(true);
+      await api.register({ fullName, studentCode, email, password });
+      const auth = await api.login(email, password);
+      if (!auth?.token || !auth?.user) {
+        throw new Error("Registration succeeded but auto login failed");
+      }
+      setToken(auth.token);
+      setAuthUser(auth.user);
+      setSessionMessage(`Welcome ${auth.user.fullName}! Your account is ready.`);
+      navigate("/student/workshops");
+    } catch (error) {
+      setSessionMessage(error.message || "Registration failed");
+    } finally {
+      setIsSubmittingAuth(false);
+    }
   }
 
-  const role = authUser?.role || "";
+  async function handleLogout() {
+    try {
+      if (token) await api.logout(token);
+    } catch {
+      // Continue local logout even if API call fails.
+    } finally {
+      setToken("");
+      setAuthUser(null);
+      setWorkshops([]);
+      setMyRegistrations([]);
+      setMyNotifications([]);
+      setSessionMessage("Please sign in.");
+      navigate("/login");
+    }
+  }
+
   const roleLabelMap = { STUDENT: "Student", ADMIN: "Admin", CHECKER: "Checker" };
   const roleLabel = roleLabelMap[role] || "";
 
-  const showAuthPanel = !token || location.pathname === "/login";
+  const showAuthPanel = !isHydratingSession && (!token || location.pathname === "/login");
+  const showGlobalLoader = isHydratingSession || isSubmittingAuth || isLoadingBackendData;
+  const loaderLabel = isHydratingSession
+    ? "Restoring session..."
+    : isSubmittingAuth
+    ? "Authenticating..."
+    : "Loading data...";
   const protectedGuard = (allowedRole, element) => {
     if (!token) return <Navigate to="/login" replace />;
     if (role !== allowedRole) {
@@ -127,17 +196,19 @@ export default function App() {
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl p-4">
+      <FullScreenLoader show={showGlobalLoader} label={loaderLabel} />
       <AppHeader role={role} roleLabel={roleLabel} fullName={authUser?.fullName} onLogout={token ? handleLogout : null} />
       {showAuthPanel ? (
         <AuthPanel
           sessionMessage={sessionMessage}
           onLogin={handleLogin}
-          loading={isSubmittingLogin}
+          onRegister={handleRegister}
+          loading={isSubmittingAuth}
           isAuthenticated={Boolean(token)}
         />
       ) : null}
       <Routes>
-        <Route path="/login" element={token ? <Navigate to="/" replace /> : null} />
+        <Route path="/login" element={isHydratingSession ? null : token ? <Navigate to="/" replace /> : null} />
         <Route
           path="/student/workshops"
           element={protectedGuard(
@@ -150,12 +221,21 @@ export default function App() {
               pagination={workshopPagination}
               onPageChange={goToWorkshopPage}
               onWorkshopsChanged={reloadWorkshops}
+              loading={isLoadingBackendData}
             />
           )}
         />
         <Route
           path="/admin/workshops"
-          element={protectedGuard("ADMIN", <AdminPage workshops={workshops} token={token} onWorkshopsChanged={reloadWorkshops} />)}
+          element={protectedGuard(
+            "ADMIN",
+            <AdminPage
+              workshops={workshops}
+              token={token}
+              onWorkshopsChanged={reloadWorkshops}
+              loading={isLoadingBackendData}
+            />
+          )}
         />
         <Route
           path="/mobile-only"

@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { Badge, Card } from "../components/ui";
+import { Badge, Card, Spinner } from "../components/ui";
 import { api } from "../services/api";
 
-export default function AdminPage({ workshops, token, onWorkshopsChanged }) {
+export default function AdminPage({ workshops, token, onWorkshopsChanged, loading }) {
   const [title, setTitle] = useState("");
   const [uploadStatus, setUploadStatus] = useState("No upload yet");
   const [analytics, setAnalytics] = useState({ activeCount: 0, seatsLeft: 0, aiCompleted: 0 });
   const [csvLog, setCsvLog] = useState({ ran_at: "-", processed_rows: 0, invalid_rows: 0, upsert_conflicts: 0 });
+  const [isCreatingWorkshop, setIsCreatingWorkshop] = useState(false);
+  const [cancellingWorkshopId, setCancellingWorkshopId] = useState("");
+  const [isUploadingSummary, setIsUploadingSummary] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -30,30 +33,39 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged }) {
   async function addWorkshop() {
     if (!title.trim()) return;
     try {
+      setIsCreatingWorkshop(true);
       await api.createWorkshop(token, { title, speaker: "TBD", room: "TBD", date: "TBD", totalSeats: 60, fee: 0 });
       setTitle("");
       onWorkshopsChanged();
     } catch (error) {
       setUploadStatus(error.message);
+    } finally {
+      setIsCreatingWorkshop(false);
     }
   }
 
   async function cancelWorkshop(id) {
     try {
+      setCancellingWorkshopId(id);
       await api.cancelWorkshop(token, id);
       onWorkshopsChanged();
     } catch (error) {
       setUploadStatus(error.message);
+    } finally {
+      setCancellingWorkshopId("");
     }
   }
 
   async function uploadSummary(workshopId) {
     try {
+      setIsUploadingSummary(true);
       await api.uploadDocument(token, { workshopId, fileName: "workshop.pdf" });
       setUploadStatus("PDF accepted. Status moved to PENDING and queued for async worker.");
       onWorkshopsChanged();
     } catch (error) {
       setUploadStatus(error.message);
+    } finally {
+      setIsUploadingSummary(false);
     }
   }
 
@@ -61,7 +73,15 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged }) {
     <div className="grid gap-4 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
         <Card>
-          <h3 className="mb-3 text-lg font-semibold">Workshop Management</h3>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Workshop Management</h3>
+            {loading ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
+                <Spinner className="h-3 w-3 border-blue-300 border-t-blue-700" />
+                Loading...
+              </span>
+            ) : null}
+          </div>
           <div className="mb-3 flex gap-2">
             <input
               value={title}
@@ -69,7 +89,20 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged }) {
               placeholder="New workshop title"
               className="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />
-            <button onClick={addWorkshop} className="rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800">Create</button>
+            <button
+              onClick={addWorkshop}
+              disabled={isCreatingWorkshop}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:bg-blue-400"
+            >
+              {isCreatingWorkshop ? (
+                <>
+                  <Spinner />
+                  Creating...
+                </>
+              ) : (
+                "Create"
+              )}
+            </button>
           </div>
 
           <div className="space-y-2">
@@ -85,9 +118,17 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged }) {
                   <Badge tone={w.status === "CANCELLED" ? "red" : "green"}>{w.status}</Badge>
                   <button
                     onClick={() => cancelWorkshop(w.id)}
-                    className="rounded-lg border border-blue-300 px-3 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-50"
+                    disabled={cancellingWorkshopId === w.id}
+                    className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-3 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-50 disabled:opacity-50"
                   >
-                    Cancel
+                    {cancellingWorkshopId === w.id ? (
+                      <>
+                        <Spinner className="h-3 w-3 border-blue-300 border-t-blue-700" />
+                        Cancelling...
+                      </>
+                    ) : (
+                      "Cancel"
+                    )}
                   </button>
                 </div>
               </div>
@@ -101,9 +142,17 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged }) {
             <input type="file" accept="application/pdf" className="block text-sm" />
             <button
               onClick={() => workshops[0] && uploadSummary(workshops[0].id)}
-              className="rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800"
+              disabled={isUploadingSummary}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:bg-blue-400"
             >
-              Upload PDF
+              {isUploadingSummary ? (
+                <>
+                  <Spinner />
+                  Uploading...
+                </>
+              ) : (
+                "Upload PDF"
+              )}
             </button>
           </div>
           <p className="mt-3 text-sm text-blue-900">{uploadStatus}</p>
