@@ -1,7 +1,8 @@
+import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import AppHeader from "./components/AppHeader";
 import AuthPanel from "./components/AuthPanel";
-import { FullScreenLoader } from "./components/ui";
+import { FullScreenLoader, ToastContainer } from "./components/ui";
 import AdminPage from "./pages/AdminPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import StudentPage from "./pages/StudentPage";
@@ -29,15 +30,35 @@ export default function App() {
     myNotifications,
     workshopPagination,
     isLoadingBackendData,
+    workshopError,
+    hasLoadedWorkshops,
     reloadWorkshops,
     goToWorkshopPage
   } = useWorkshopData({ token, role, setSessionMessage });
+  const [toasts, setToasts] = useState([]);
+
+  const pushToast = useCallback((message, type = "info") => {
+    const id = `${Date.now()}-${Math.random()}`;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    return id;
+  }, []);
+
+  const dismissToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  useEffect(() => {
+    if (!toasts.length) return undefined;
+    const latest = toasts[toasts.length - 1];
+    const timer = setTimeout(() => dismissToast(latest.id), 2800);
+    return () => clearTimeout(timer);
+  }, [toasts, dismissToast]);
 
   const roleLabelMap = { STUDENT: "Student", ADMIN: "Admin", CHECKER: "Checker" };
   const roleLabel = roleLabelMap[role] || "";
 
   const showAuthPanel = !isHydratingSession && location.pathname === "/login";
-  const showGlobalLoader = isHydratingSession || isSubmittingAuth || isLoadingBackendData;
+  const showGlobalLoader = isHydratingSession || isSubmittingAuth;
   const loaderLabel = isHydratingSession
     ? "Restoring session..."
     : isSubmittingAuth
@@ -56,6 +77,7 @@ export default function App() {
   return (
     <main className="mx-auto min-h-screen max-w-7xl p-4">
       <FullScreenLoader show={showGlobalLoader} label={loaderLabel} />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <AppHeader role={role} roleLabel={roleLabel} fullName={authUser?.fullName} onLogout={token ? handleLogout : null} />
       {showAuthPanel ? (
         <AuthPanel
@@ -81,6 +103,9 @@ export default function App() {
               onPageChange={goToWorkshopPage}
               onWorkshopsChanged={reloadWorkshops}
               loading={isLoadingBackendData}
+              loadError={workshopError}
+              hasLoaded={hasLoadedWorkshops}
+              onToast={pushToast}
             />
           )}
         />
@@ -93,6 +118,9 @@ export default function App() {
               token={token}
               onWorkshopsChanged={reloadWorkshops}
               loading={isLoadingBackendData}
+              loadError={workshopError}
+              hasLoaded={hasLoadedWorkshops}
+              onToast={pushToast}
             />
           )}
         />

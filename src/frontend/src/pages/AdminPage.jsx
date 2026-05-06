@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Badge, Card, Spinner } from "../components/ui";
 import { api } from "../services/api";
 
-export default function AdminPage({ workshops, token, onWorkshopsChanged, loading }) {
+export default function AdminPage({ workshops, token, onWorkshopsChanged, loading, loadError, hasLoaded, onToast }) {
   const [title, setTitle] = useState("");
   const [uploadStatus, setUploadStatus] = useState("No upload yet");
   const [analytics, setAnalytics] = useState({ activeCount: 0, seatsLeft: 0, aiCompleted: 0 });
@@ -37,8 +37,10 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
       await api.createWorkshop(token, { title, speaker: "TBD", room: "TBD", date: "TBD", totalSeats: 60, fee: 0 });
       setTitle("");
       onWorkshopsChanged();
+      onToast?.("Workshop created.", "success");
     } catch (error) {
       setUploadStatus(error.message);
+      onToast?.(error.message || "Failed to create workshop", "error");
     } finally {
       setIsCreatingWorkshop(false);
     }
@@ -49,8 +51,10 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
       setCancellingWorkshopId(id);
       await api.cancelWorkshop(token, id);
       onWorkshopsChanged();
+      onToast?.("Workshop cancelled.", "info");
     } catch (error) {
       setUploadStatus(error.message);
+      onToast?.(error.message || "Failed to cancel workshop", "error");
     } finally {
       setCancellingWorkshopId("");
     }
@@ -62,8 +66,10 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
       await api.uploadDocument(token, { workshopId, fileName: "workshop.pdf" });
       setUploadStatus("PDF accepted. Status moved to PENDING and queued for async worker.");
       onWorkshopsChanged();
+      onToast?.("PDF accepted and queued.", "success");
     } catch (error) {
       setUploadStatus(error.message);
+      onToast?.(error.message || "Upload failed", "error");
     } finally {
       setIsUploadingSummary(false);
     }
@@ -106,6 +112,34 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
           </div>
 
           <div className="space-y-2">
+            {loading && !hasLoaded ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, idx) => (
+                  <div key={`admin-skeleton-${idx}`} className="animate-pulse rounded-lg border border-blue-100 bg-blue-50/30 p-3">
+                    <div className="mb-2 h-4 w-2/3 rounded bg-blue-200/70" />
+                    <div className="h-3 w-1/2 rounded bg-blue-100/90" />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {!loading && loadError ? (
+              <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                <p className="font-medium">Could not load workshops.</p>
+                <p className="mt-1">{loadError}</p>
+                <button
+                  type="button"
+                  onClick={onWorkshopsChanged}
+                  className="mt-2 rounded border border-rose-300 px-2 py-1 text-xs font-semibold"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : null}
+            {!loading && !loadError && workshops.length === 0 ? (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-3 text-sm text-blue-800">
+                No workshops found. Create one to get started.
+              </div>
+            ) : null}
             {workshops.map((w) => (
               <div key={w.id} className="flex flex-wrap items-center justify-between rounded-lg border border-blue-100 bg-blue-50/30 p-3">
                 <div>

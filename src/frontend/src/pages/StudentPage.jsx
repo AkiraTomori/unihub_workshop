@@ -11,7 +11,10 @@ export default function StudentPage({
   pagination,
   onPageChange,
   onWorkshopsChanged,
-  loading
+  loading,
+  loadError,
+  hasLoaded,
+  onToast
 }) {
   const [selected, setSelected] = useState(null);
   const [notice, setNotice] = useState("No recent notifications");
@@ -44,13 +47,16 @@ export default function StudentPage({
           message: "Registration reserved. Please complete payment to receive QR."
         });
         setNotice(`Seat reserved for ${workshop.title}. Complete payment to confirm registration.`);
+        onToast?.(`Seat reserved for ${workshop.title}.`, "info");
       } else {
         setSelected({ ...workshop, qrCode: registration.qr_code });
         setNotice(`Registration completed for ${workshop.title}. QR ticket generated and email queued.`);
+        onToast?.(`Registered for ${workshop.title}.`, "success");
       }
       onWorkshopsChanged();
     } catch (error) {
       setNotice(error.message);
+      onToast?.(error.message || "Registration failed", "error");
     } finally {
       setSubmittingWorkshopId("");
     }
@@ -81,6 +87,7 @@ export default function StudentPage({
         setSelected({ ...paymentContext.workshop, qrCode: result.qrCode });
         setNotice(`Payment success. QR issued for ${paymentContext.workshop.title}.`);
         setPaymentContext(null);
+        onToast?.("Payment completed. Registration confirmed.", "success");
       } else {
         setPaymentContext((prev) =>
           prev
@@ -92,10 +99,12 @@ export default function StudentPage({
             : prev
         );
         setNotice(result.message || "Payment pending. Try again later.");
+        onToast?.(result.message || "Payment pending. Try again later.", "info");
       }
       onWorkshopsChanged();
     } catch (error) {
       setNotice(error.message);
+      onToast?.(error.message || "Payment failed", "error");
     } finally {
       setProcessingPayment(false);
     }
@@ -201,6 +210,35 @@ export default function StudentPage({
             </div>
           </div>
           <div className="space-y-3">
+            {loading && !hasLoaded ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, idx) => (
+                  <div key={`skeleton-${idx}`} className="animate-pulse rounded-lg border border-blue-100 bg-blue-50/30 p-3">
+                    <div className="mb-2 h-4 w-2/3 rounded bg-blue-200/70" />
+                    <div className="mb-2 h-3 w-1/2 rounded bg-blue-100/90" />
+                    <div className="h-3 w-1/3 rounded bg-blue-100/90" />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {!loading && loadError ? (
+              <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                <p className="font-medium">Could not load workshops.</p>
+                <p className="mt-1">{loadError}</p>
+                <button
+                  type="button"
+                  onClick={onWorkshopsChanged}
+                  className="mt-2 rounded border border-rose-300 px-2 py-1 text-xs font-semibold"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : null}
+            {!loading && !loadError && sortedWorkshops.length === 0 ? (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-3 text-sm text-blue-800">
+                No workshops available right now. Check back later.
+              </div>
+            ) : null}
             {sortedWorkshops.map((w) => (
               <div key={w.id} className="rounded-lg border border-blue-100 bg-blue-50/30 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">

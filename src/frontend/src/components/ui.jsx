@@ -49,3 +49,31 @@ export function FullScreenLoader({ show, label = "Loading..." }) {
     </div>
   );
 }
+
+export function ToastContainer({ toasts, onDismiss }) {
+  if (!toasts?.length) return null;
+  const tones = {
+    success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    error: "border-rose-200 bg-rose-50 text-rose-800",
+    info: "border-blue-200 bg-blue-50 text-blue-800"
+  };
+
+  return (
+    <div className="fixed right-4 top-4 z-[120] flex w-full max-w-sm flex-col gap-2">
+      {toasts.map((toast) => (
+        <div key={toast.id} className={`rounded-lg border px-3 py-2 text-sm shadow ${tones[toast.type] || tones.info}`}>
+          <div className="flex items-start justify-between gap-2">
+            <p>{toast.message}</p>
+            <button
+              type="button"
+              className="text-xs font-semibold opacity-70 hover:opacity-100"
+              onClick={() => onDismiss(toast.id)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

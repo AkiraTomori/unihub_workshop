@@ -26,6 +26,8 @@ export function useWorkshopData({ token, role, setSessionMessage }) {
   const [workshopPage, setWorkshopPage] = useState(1);
   const [workshopPagination, setWorkshopPagination] = useState(null);
   const [isLoadingBackendData, setIsLoadingBackendData] = useState(false);
+  const [workshopError, setWorkshopError] = useState("");
+  const [hasLoadedWorkshops, setHasLoadedWorkshops] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -36,6 +38,7 @@ export function useWorkshopData({ token, role, setSessionMessage }) {
       try {
         const workshopResult = await api.getWorkshops(token, { page: workshopPage, pageSize: 10 });
         if (!mounted) return;
+        setWorkshopError("");
         const items = Array.isArray(workshopResult) ? workshopResult : workshopResult.data;
         setWorkshops((items || []).map(mapWorkshop));
         if (!Array.isArray(workshopResult) && workshopResult.pagination) {
@@ -58,10 +61,14 @@ export function useWorkshopData({ token, role, setSessionMessage }) {
         }
       } catch (error) {
         if (!mounted) return;
-        setWorkshops(initialWorkshops);
+        setWorkshops(initialWorkshops.slice(0, 0));
+        setWorkshopError(error.message || "Could not load workshop data.");
         setSessionMessage(error.message || "Could not load workshop data.");
       } finally {
-        if (mounted) setIsLoadingBackendData(false);
+        if (mounted) {
+          setIsLoadingBackendData(false);
+          setHasLoadedWorkshops(true);
+        }
       }
     }
 
@@ -85,6 +92,8 @@ export function useWorkshopData({ token, role, setSessionMessage }) {
     myNotifications,
     workshopPagination,
     isLoadingBackendData,
+    workshopError,
+    hasLoadedWorkshops,
     reloadWorkshops,
     goToWorkshopPage
   };
