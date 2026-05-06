@@ -1,2 +1,0 @@
-Dự kiến: ReactJS (CSR) hoặc EJS/Handlebar (SSR)
-Giao diện thì có thể vibe hoặc đi kiếm templates
