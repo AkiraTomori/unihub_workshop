@@ -4,6 +4,7 @@ import AppHeader from "./components/AppHeader";
 import AuthPanel from "./components/AuthPanel";
 import { FullScreenLoader } from "./components/ui";
 import AdminPage from "./pages/AdminPage";
+import NotFoundPage from "./pages/NotFoundPage";
 import StudentPage from "./pages/StudentPage";
 import { api } from "./services/api";
 import { initialWorkshops } from "./data/workshops";
@@ -177,7 +178,7 @@ export default function App() {
   const roleLabelMap = { STUDENT: "Student", ADMIN: "Admin", CHECKER: "Checker" };
   const roleLabel = roleLabelMap[role] || "";
 
-  const showAuthPanel = !isHydratingSession && (!token || location.pathname === "/login");
+  const showAuthPanel = !isHydratingSession && location.pathname === "/login";
   const showGlobalLoader = isHydratingSession || isSubmittingAuth || isLoadingBackendData;
   const loaderLabel = isHydratingSession
     ? "Restoring session..."
@@ -268,7 +269,7 @@ export default function App() {
             )
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage isAuthenticated={Boolean(token)} role={role} />} />
       </Routes>
     </main>
   );
