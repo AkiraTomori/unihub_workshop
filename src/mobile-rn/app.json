@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "UniHub Mobile",
+    "slug": "unihub-mobile-rn",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.unihub.mobile",
+      "permissions": ["CAMERA"]
+    },
+    "ios": {
+      "bundleIdentifier": "com.unihub.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Camera is required to scan workshop QR tickets for check-in."
+      }
+    }
+  }
+}
