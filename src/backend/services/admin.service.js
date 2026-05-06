@@ -81,15 +81,16 @@ export class AdminService {
 
   static async getAnalytics() {
     const [active] = await db('workshops').where({ status: 'PUBLISHED' }).whereNull('deleted_at').count('* as count');
-    const [{ seats_left: seatsLeft }] = await db('workshops')
+    const seatsResult = await db('workshops')
       .where({ status: 'PUBLISHED' })
       .whereNull('deleted_at')
-      .sum(db.raw('GREATEST(capacity - registered_count, 0) as seats_left'));
+      .select(db.raw('COALESCE(SUM(GREATEST(capacity - registered_count, 0)), 0) as seats_left'))
+      .first();
     const [aiDone] = await db('documents').where({ process_status: 'COMPLETED' }).count('* as count');
 
     return {
       activeCount: Number(active?.count || 0),
-      seatsLeft: Number(seatsLeft || 0),
+      seatsLeft: Number(seatsResult?.seats_left || 0),
       aiCompleted: Number(aiDone?.count || 0),
     };
   }

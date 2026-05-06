@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { LogOut, ShieldCheck, UserRound } from "lucide-react";
 
 export default function AppHeader({ role, roleLabel, fullName, onLogout }) {
   const links = [];
@@ -23,10 +24,20 @@ export default function AppHeader({ role, roleLabel, fullName, onLogout }) {
             {link.label}
           </NavLink>
         ))}
-        <span className="text-sm text-blue-100">{fullName || "Guest"}</span>
-        <span className="rounded-lg bg-blue-700/70 px-3 py-1 text-sm font-medium">{roleLabel || "Not signed in"}</span>
+        <span className="inline-flex items-center gap-1 text-sm text-blue-100">
+          <UserRound size={14} />
+          {fullName || "Guest"}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-lg bg-blue-700/70 px-3 py-1 text-sm font-medium">
+          <ShieldCheck size={14} />
+          {roleLabel || "Not signed in"}
+        </span>
         {onLogout ? (
-          <button onClick={onLogout} className="rounded-lg bg-white px-3 py-1 text-sm font-medium text-blue-900">
+          <button
+            onClick={onLogout}
+            className="inline-flex items-center gap-1 rounded-lg bg-white px-3 py-1 text-sm font-medium text-blue-900"
+          >
+            <LogOut size={14} />
             Logout
           </button>
         ) : null}

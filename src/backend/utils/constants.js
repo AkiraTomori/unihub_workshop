@@ -53,7 +53,7 @@ export const HTTP_STATUS = {
  */
 export const RATE_LIMIT = {
   LOGIN: {
-    maxAttempts: 5,
+    maxAttempts: 10,
     windowMs: 15 * 60 * 1000, // 15 minutes
   },
   REGISTER: {

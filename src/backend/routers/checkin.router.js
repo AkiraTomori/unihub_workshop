@@ -4,6 +4,7 @@ import { requireRole, verifyToken } from '../middlewares/auth.mw.js';
 
 const router = express.Router();
 
+router.post('/scan', verifyToken, requireRole(['CHECKER', 'ADMIN']), (req, res) => CheckinController.scan(req, res));
 router.post('/sync', verifyToken, requireRole(['CHECKER', 'ADMIN']), (req, res) => CheckinController.sync(req, res));
 
 export default router;

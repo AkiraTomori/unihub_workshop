@@ -12,8 +12,15 @@ export function AuthProvider({ children }) {
     (async () => {
       const session = await loadJson(storageKeys.authSession);
       if (session?.token) {
-        setToken(session.token);
-        setUser(session.user);
+        try {
+          const profile = await api.getProfile(session.token);
+          const next = { token: session.token, user: profile };
+          setToken(next.token);
+          setUser(next.user);
+          await saveJson(storageKeys.authSession, next);
+        } catch {
+          await removeKey(storageKeys.authSession);
+        }
       }
       setHydrating(false);
     })();
@@ -32,7 +39,15 @@ export function AuthProvider({ children }) {
         await saveJson(storageKeys.authSession, next);
         return result;
       },
+      async register({ email, password, fullName, studentCode }) {
+        return api.register({ email, password, fullName, studentCode });
+      },
       async logout() {
+        try {
+          if (token) await api.logout(token);
+        } catch {
+          // Keep local logout even if server logout fails
+        }
         setToken("");
         setUser(null);
         await removeKey(storageKeys.authSession);

@@ -1,6 +1,18 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const API_BASE_URL = "http://10.0.2.2:4000/api";
+const envBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+export const API_BASE_URL = envBaseUrl || "http://10.0.2.2:3000/api";
+
+function mapUser(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    fullName: user.full_name || "",
+    studentCode: user.student_code || null
+  };
+}
 
 export async function apiRequest(path, { method = "GET", body, token } = {}) {
   const headers = {
@@ -21,8 +33,33 @@ export async function apiRequest(path, { method = "GET", body, token } = {}) {
 }
 
 export const api = {
-  login(email, password) {
-    return apiRequest("/auth/login", { method: "POST", body: { email, password } });
+  async login(email, password) {
+    const response = await apiRequest("/auth/login", { method: "POST", body: { email, password } });
+    return {
+      token: response?.data?.accessToken || "",
+      user: mapUser(response?.data?.user)
+    };
+  },
+  async register({ email, password, fullName, studentCode }) {
+    const response = await apiRequest("/auth/register", {
+      method: "POST",
+      body: {
+        email,
+        password,
+        full_name: fullName,
+        student_code: studentCode || null
+      }
+    });
+    return {
+      user: mapUser(response?.data?.user)
+    };
+  },
+  async getProfile(token) {
+    const response = await apiRequest("/auth/me", { token });
+    return mapUser(response?.data);
+  },
+  async logout(token) {
+    await apiRequest("/auth/logout", { method: "POST", token });
   },
   getWorkshops(token, page = 1, pageSize = 10) {
     return apiRequest(`/workshops?page=${page}&pageSize=${pageSize}`, { token });

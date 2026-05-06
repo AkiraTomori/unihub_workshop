@@ -1,5 +1,6 @@
 import { Badge, Card, Spinner } from "./ui";
 import { useState } from "react";
+import { AtSign, IdCard, Lock, LogIn, UserPlus, UserRound } from "lucide-react";
 
 export default function AuthPanel({ sessionMessage, onLogin, onRegister, loading, isAuthenticated }) {
   const [mode, setMode] = useState("login");
@@ -80,7 +81,10 @@ export default function AuthPanel({ sessionMessage, onLogin, onRegister, loading
               }}
               className={`w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 ${mode === "login" ? "bg-blue-900 text-white shadow-sm shadow-blue-200/70" : "border border-blue-300 text-blue-900 hover:bg-blue-50"}`}
             >
-              Login
+              <span className="inline-flex items-center gap-1">
+                <LogIn size={14} />
+                Login
+              </span>
             </button>
             <button
               type="button"
@@ -90,56 +94,71 @@ export default function AuthPanel({ sessionMessage, onLogin, onRegister, loading
               }}
               className={`w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 ${mode === "register" ? "bg-blue-900 text-white shadow-sm shadow-blue-200/70" : "border border-blue-300 text-blue-900 hover:bg-blue-50"}`}
             >
-              Register
+              <span className="inline-flex items-center gap-1">
+                <UserPlus size={14} />
+                Register
+              </span>
             </button>
           </div>
           {mode === "register" ? (
             <>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(event) => {
-                  setFullName(event.target.value);
-                  if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: "" }));
-                }}
-                placeholder="Full name"
-                className="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm transition focus:-translate-y-0.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              />
+              <div className="relative">
+                <UserRound size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(event) => {
+                    setFullName(event.target.value);
+                    if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: "" }));
+                  }}
+                  placeholder="Full name"
+                  className="w-full rounded-lg border border-blue-200 px-9 py-2 text-sm transition focus:-translate-y-0.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
               {errors.fullName ? <p className="text-xs text-red-600">{errors.fullName}</p> : null}
-              <input
-                type="text"
-                value={studentCode}
-                onChange={(event) => {
-                  setStudentCode(event.target.value);
-                  if (errors.studentCode) setErrors((prev) => ({ ...prev, studentCode: "" }));
-                }}
-                placeholder="Student code (optional)"
-                className="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm transition focus:-translate-y-0.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              />
+              <div className="relative">
+                <IdCard size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
+                <input
+                  type="text"
+                  value={studentCode}
+                  onChange={(event) => {
+                    setStudentCode(event.target.value);
+                    if (errors.studentCode) setErrors((prev) => ({ ...prev, studentCode: "" }));
+                  }}
+                  placeholder="Student code (optional)"
+                  className="w-full rounded-lg border border-blue-200 px-9 py-2 text-sm transition focus:-translate-y-0.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
               {errors.studentCode ? <p className="text-xs text-red-600">{errors.studentCode}</p> : null}
             </>
           ) : null}
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => {
-              setEmail(event.target.value);
-              if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
-            }}
-            placeholder="Email"
-            className="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm transition focus:-translate-y-0.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-          />
+          <div className="relative">
+            <AtSign size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+              }}
+              placeholder="Email"
+              className="w-full rounded-lg border border-blue-200 px-9 py-2 text-sm transition focus:-translate-y-0.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
           {errors.email ? <p className="text-xs text-red-600">{errors.email}</p> : null}
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => {
-              setPassword(event.target.value);
-              if (errors.password) setErrors((prev) => ({ ...prev, password: "" }));
-            }}
-            placeholder="Password"
-            className="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm transition focus:-translate-y-0.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-          />
+          <div className="relative">
+            <Lock size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                if (errors.password) setErrors((prev) => ({ ...prev, password: "" }));
+              }}
+              placeholder="Password"
+              className="w-full rounded-lg border border-blue-200 px-9 py-2 text-sm transition focus:-translate-y-0.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
           {errors.password ? <p className="text-xs text-red-600">{errors.password}</p> : null}
           <button
             type="submit"
