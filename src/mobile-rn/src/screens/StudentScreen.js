@@ -1,87 +1,31 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React from "react";
+import { FlatList, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
-import { api } from "../api/client";
 import SectionCard from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
+import { useStudentData } from "../features/student/useStudentData";
 import { vnd } from "../utils/format";
 
 export default function StudentScreen() {
   const { token } = useAuth();
-  const [workshops, setWorkshops] = useState([]);
-  const [registrations, setRegistrations] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState("asc");
-  const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState(null);
-  const [confirmWorkshop, setConfirmWorkshop] = useState(null);
-  const [paymentFlow, setPaymentFlow] = useState(null);
-
-  const loadData = async (targetPage = page) => {
-    const workshopResult = await api.getWorkshops(token, targetPage, 8);
-    setWorkshops(workshopResult.data || []);
-    setPagination(workshopResult.pagination || null);
-    const [regs, notifs] = await Promise.all([api.getMyRegistrations(token), api.getMyNotifications(token)]);
-    setRegistrations(regs || []);
-    setNotifications(notifs || []);
-  };
-
-  useEffect(() => {
-    loadData(page).catch((e) => Alert.alert("Error", e.message));
-  }, [page]);
-
-  const registeredByWorkshop = useMemo(
-    () => new Map(registrations.map((item) => [item.workshop_id, item])),
-    [registrations]
-  );
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const list = workshops.filter((w) =>
-      [w.title, w.speaker, w.room, w.date_text].some((field) => String(field || "").toLowerCase().includes(q))
-    );
-    return list.sort((a, b) =>
-      sortOrder === "asc" ? String(a.date_text).localeCompare(String(b.date_text)) : String(b.date_text).localeCompare(String(a.date_text))
-    );
-  }, [workshops, search, sortOrder]);
-
-  const confirmRegistration = async () => {
-    if (!confirmWorkshop) return;
-    const workshop = confirmWorkshop;
-    setConfirmWorkshop(null);
-    try {
-      const registration = await api.registerWorkshop(token, workshop.id);
-      if (registration.requires_payment) {
-        setPaymentFlow({
-          workshop,
-          registrationId: registration.id,
-          idempotencyKey: `${registration.id}-${Date.now()}`
-        });
-      } else {
-        Alert.alert("Success", `Registered for ${workshop.title}`);
-      }
-      await loadData(page);
-    } catch (e) {
-      Alert.alert("Registration failed", e.message);
-    }
-  };
-
-  const runPayment = async (simulateResult = "success") => {
-    if (!paymentFlow) return;
-    try {
-      const result = await api.checkoutPayment(token, paymentFlow.registrationId, paymentFlow.idempotencyKey, simulateResult);
-      if (result.status === "CONFIRMED") {
-        Alert.alert("Payment success", "Registration confirmed and QR issued.");
-        setPaymentFlow(null);
-      } else {
-        Alert.alert("Payment pending", result.message || "Please retry.");
-      }
-      await loadData(page);
-    } catch (e) {
-      Alert.alert("Payment failed", e.message);
-    }
-  };
+  const {
+    search,
+    setSearch,
+    sortOrder,
+    setSortOrder,
+    pagination,
+    registrations,
+    notifications,
+    confirmWorkshop,
+    setConfirmWorkshop,
+    paymentFlow,
+    setPaymentFlow,
+    registeredByWorkshop,
+    filtered,
+    setPage,
+    confirmRegistration,
+    runPayment
+  } = useStudentData(token);
 
   return (
     <SafeAreaView style={styles.container}>

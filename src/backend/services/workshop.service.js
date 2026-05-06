@@ -1,9 +1,9 @@
 import db from '../config/db.js';
 
 export class WorkshopService {
-  static async listPublished({ page = 1, pageSize = 10 }) {
+  static async listPublished({ page = 1 }) {
     const safePage = Math.max(1, Number(page) || 1);
-    const safePageSize = Math.min(50, Math.max(1, Number(pageSize) || 10));
+    const safePageSize = 10;
     const offset = (safePage - 1) * safePageSize;
 
     const [{ total }] = await db('workshops')

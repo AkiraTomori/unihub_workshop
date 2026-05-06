@@ -1,59 +1,23 @@
-import React, { useEffect, useState } from "react";
-import { Alert, FlatList, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { api } from "../api/client";
+import React from "react";
+import { FlatList, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import SectionCard from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
+import { useAdminData } from "../features/admin/useAdminData";
 
 export default function AdminScreen() {
   const { token } = useAuth();
-  const [workshops, setWorkshops] = useState([]);
-  const [analytics, setAnalytics] = useState(null);
-  const [csvLog, setCsvLog] = useState(null);
-  const [newTitle, setNewTitle] = useState("");
-
-  const load = async () => {
-    const [workshopResult, analyticsResult, csvResult] = await Promise.all([
-      api.getWorkshops(token, 1, 20),
-      api.getAdminAnalytics(token),
-      api.getCsvLatest(token)
-    ]);
-    setWorkshops(workshopResult.data || []);
-    setAnalytics(analyticsResult);
-    setCsvLog(csvResult);
-  };
-
-  useEffect(() => {
-    load().catch((e) => Alert.alert("Error", e.message));
-  }, []);
-
-  const createWorkshop = async () => {
-    if (!newTitle.trim()) return;
-    try {
-      await api.createWorkshop(token, { title: newTitle, speaker: "TBD", room: "TBD", date: "TBD", totalSeats: 60, fee: 0 });
-      setNewTitle("");
-      await load();
-    } catch (e) {
-      Alert.alert("Create failed", e.message);
-    }
-  };
-
-  const cancelWorkshop = async (id) => {
-    try {
-      await api.cancelWorkshop(token, id);
-      await load();
-    } catch (e) {
-      Alert.alert("Cancel failed", e.message);
-    }
-  };
-
-  const uploadDoc = async (id) => {
-    try {
-      await api.uploadDocument(token, { workshopId: id, fileName: "workshop.pdf" });
-      Alert.alert("Accepted", "PDF queued for async summary processing.");
-    } catch (e) {
-      Alert.alert("Upload failed", e.message);
-    }
-  };
+  const {
+    workshops,
+    analytics,
+    csvLog,
+    newTitle,
+    setNewTitle,
+    pagination,
+    setPage,
+    createWorkshop,
+    cancelWorkshop,
+    uploadDoc
+  } = useAdminData(token);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,6 +47,27 @@ export default function AdminScreen() {
         data={workshops}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 24 }}
+        ListHeaderComponent={
+          <SectionCard>
+            <Text style={styles.meta}>Page {pagination?.page || 1} / {pagination?.totalPages || 1}</Text>
+            <View style={styles.row}>
+              <TouchableOpacity
+                disabled={!pagination?.hasPrevPage}
+                style={styles.navBtn}
+                onPress={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <Text>Prev</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={!pagination?.hasNextPage}
+                style={styles.navBtn}
+                onPress={() => setPage((p) => p + 1)}
+              >
+                <Text>Next</Text>
+              </TouchableOpacity>
+            </View>
+          </SectionCard>
+        }
         renderItem={({ item }) => (
           <SectionCard>
             <Text style={styles.itemTitle}>{item.title}</Text>
