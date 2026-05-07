@@ -1,5 +1,7 @@
 import React from "react";
 import { FlatList, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
 import SectionCard from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
@@ -7,6 +9,7 @@ import { useStudentData } from "../features/student/useStudentData";
 import { vnd } from "../utils/format";
 
 export default function StudentScreen() {
+  const navigation = useNavigation();
   const { token } = useAuth();
   const {
     search,
@@ -36,7 +39,10 @@ export default function StudentScreen() {
         ListHeaderComponent={
           <View>
             <SectionCard>
-              <Text style={styles.title}>Workshop Schedule</Text>
+              <View style={styles.titleRow}>
+                <Ionicons name="calendar-outline" size={16} color="#1e3a8a" />
+                <Text style={styles.title}>Workshop Schedule</Text>
+              </View>
               <TextInput value={search} onChangeText={setSearch} placeholder="Search workshop..." style={styles.input} />
               <View style={styles.row}>
                 <TouchableOpacity
@@ -58,22 +64,55 @@ export default function StudentScreen() {
         renderItem={({ item }) => {
           const reg = registeredByWorkshop.get(item.id);
           const pending = reg?.status === "PENDING_PAYMENT";
+          const soldOut = item.seats_left <= 0;
+          const isRegistered = Boolean(reg) && !pending;
+          const registerButtonStyle = [
+            styles.actionBtn,
+            styles.flexButton,
+            styles.actionBtnInline,
+            pending && styles.pendingBtn,
+            isRegistered && styles.registeredBtn,
+            soldOut && styles.soldOutBtn
+          ];
           return (
             <SectionCard>
               <Text style={styles.workshopTitle}>{item.title}</Text>
-              <Text style={styles.meta}>{item.speaker} • {item.room} • {item.date_text}</Text>
-              <Text style={styles.meta}>Seats: {item.seats_left}/{item.total_seats}</Text>
-              <Text style={styles.meta}>Fee: {item.fee === 0 ? "Free" : `${vnd(item.fee)} VND`}</Text>
-              <Text style={styles.meta}>AI summary: {item.summary_status}</Text>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                disabled={Boolean(reg) || item.seats_left <= 0}
-                onPress={() => setConfirmWorkshop(item)}
-              >
-                <Text style={styles.actionText}>
-                  {item.seats_left <= 0 ? "Sold Out" : pending ? "Pending Payment" : reg ? "Registered" : "Register"}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.metaRow}>
+                <Ionicons name="person-outline" size={13} color="#475569" />
+                <Text style={styles.meta}>{item.speaker} • {item.room} • {item.date_text}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Ionicons name="people-outline" size={13} color="#475569" />
+                <Text style={styles.meta}>Seats: {item.seats_left}/{item.total_seats}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Ionicons name="cash-outline" size={13} color="#475569" />
+                <Text style={styles.meta}>Fee: {item.fee === 0 ? "Free" : `${vnd(item.fee)} VND`}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Ionicons name="sparkles-outline" size={13} color="#475569" />
+                <Text style={styles.meta}>AI summary: {item.summary_status}</Text>
+              </View>
+              <View style={styles.row}>
+                <TouchableOpacity
+                  style={[styles.navBtn, styles.flexButton]}
+                  onPress={() => navigation.navigate("WorkshopDetail", { workshopId: item.id })}
+                >
+                  <View style={styles.btnLabelRow}>
+                    <Ionicons name="information-circle-outline" size={14} color="#1e3a8a" />
+                    <Text>Details</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={registerButtonStyle}
+                  disabled={Boolean(reg) || soldOut}
+                  onPress={() => setConfirmWorkshop(item)}
+                >
+                  <Text style={styles.actionText}>
+                    {soldOut ? "Sold Out" : pending ? "Pending Payment" : reg ? "Registered" : "Register"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </SectionCard>
           );
         }}
@@ -100,7 +139,10 @@ export default function StudentScreen() {
             </SectionCard>
 
             <SectionCard>
-              <Text style={styles.title}>My Workshops</Text>
+              <View style={styles.titleRow}>
+                <Ionicons name="bookmarks-outline" size={16} color="#1e3a8a" />
+                <Text style={styles.title}>My Workshops</Text>
+              </View>
               {registrations.length === 0 ? (
                 <Text style={styles.meta}>You have not registered for any workshops yet.</Text>
               ) : (
@@ -115,7 +157,10 @@ export default function StudentScreen() {
             </SectionCard>
 
             <SectionCard>
-              <Text style={styles.title}>Your QR Tickets</Text>
+              <View style={styles.titleRow}>
+                <Ionicons name="qr-code-outline" size={16} color="#1e3a8a" />
+                <Text style={styles.title}>Your QR Tickets</Text>
+              </View>
               {registrations.slice(0, 3).map((item) => (
                 <View key={item.id} style={styles.ticket}>
                   <Text style={styles.meta}>{item.workshop_title}</Text>
@@ -125,7 +170,10 @@ export default function StudentScreen() {
             </SectionCard>
 
             <SectionCard>
-              <Text style={styles.title}>Notifications</Text>
+              <View style={styles.titleRow}>
+                <Ionicons name="notifications-outline" size={16} color="#1e3a8a" />
+                <Text style={styles.title}>Notifications</Text>
+              </View>
               {(notifications || []).slice(0, 5).map((n) => (
                 <Text key={n.id} style={styles.meta}>
                   • {n.title} ({n.channel})
@@ -179,15 +227,23 @@ export default function StudentScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#eef4ff", padding: 10 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
   title: { fontWeight: "700", color: "#1e3a8a", fontSize: 16, marginBottom: 8 },
   input: { borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 8, padding: 10, marginBottom: 8, backgroundColor: "#fff" },
   row: { flexDirection: "row", gap: 8 },
+  flexButton: { flex: 1 },
   sortBtn: { flex: 1, borderWidth: 1, borderColor: "#93c5fd", borderRadius: 8, padding: 8, alignItems: "center", backgroundColor: "#fff" },
   sortBtnActive: { backgroundColor: "#dbeafe" },
   sortText: { color: "#1e3a8a", fontWeight: "600" },
   workshopTitle: { fontWeight: "700", color: "#1e3a8a", marginBottom: 4 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
   meta: { color: "#334155", marginBottom: 2, fontSize: 12 },
+  btnLabelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   actionBtn: { backgroundColor: "#1e3a8a", borderRadius: 8, padding: 10, marginTop: 8, alignItems: "center" },
+  actionBtnInline: { marginTop: 0 },
+  pendingBtn: { backgroundColor: "#b45309" },
+  registeredBtn: { backgroundColor: "#93c5fd" },
+  soldOutBtn: { backgroundColor: "#64748b" },
   actionText: { color: "#fff", fontWeight: "700" },
   navBtn: { borderWidth: 1, borderColor: "#93c5fd", borderRadius: 8, padding: 10, alignItems: "center", flex: 1, backgroundColor: "#fff" },
   overlay: { flex: 1, backgroundColor: "rgba(15,23,42,0.55)", justifyContent: "center", alignItems: "center", padding: 16 },

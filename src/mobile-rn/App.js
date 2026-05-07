@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import LoginScreen from "./src/screens/LoginScreen";
 import RoleHomeScreen from "./src/screens/RoleHomeScreen";
+import WorkshopDetailScreen from "./src/screens/WorkshopDetailScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -16,7 +17,10 @@ function RootNavigator() {
       {!token ? (
         <Stack.Screen name="Login" component={LoginScreen} />
       ) : (
-        <Stack.Screen name="RoleHome" component={RoleHomeScreen} />
+        <>
+          <Stack.Screen name="RoleHome" component={RoleHomeScreen} />
+          <Stack.Screen name="WorkshopDetail" component={WorkshopDetailScreen} />
+        </>
       )}
     </Stack.Navigator>
   );

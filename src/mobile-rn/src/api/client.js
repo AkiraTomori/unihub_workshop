@@ -64,6 +64,9 @@ export const api = {
   getWorkshops(token, page = 1, pageSize = 10) {
     return apiRequest(`/workshops?page=${page}&pageSize=${pageSize}`, { token });
   },
+  getWorkshopDetail(token, workshopId) {
+    return apiRequest(`/workshops/${workshopId}`, { token });
+  },
   registerWorkshop(token, workshopId) {
     return apiRequest("/registrations", { method: "POST", token, body: { workshopId } });
   },
