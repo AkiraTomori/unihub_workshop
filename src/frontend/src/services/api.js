@@ -2,13 +2,22 @@ import { initialWorkshops } from "../data/workshops";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
 
+function getFallbackToken() {
+  try {
+    return localStorage.getItem("unihub.auth.token") || "";
+  } catch {
+    return "";
+  }
+}
+
 async function request(path, { token, method = "GET", body } = {}) {
+  const authToken = token || getFallbackToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
     },
     body: body ? JSON.stringify(body) : undefined
   });
@@ -87,6 +96,24 @@ export const api = {
     const response = await request(`/workshops/${workshopId}`, { token });
     return response?.data || null;
   },
+  async getAdminWorkshops(token, { page = 1, pageSize = 10 } = {}) {
+    return request(`/admin/workshops?page=${page}&pageSize=${pageSize}`, { token });
+  },
+  async getAdminWorkshopById(token, workshopId) {
+    const response = await request(`/admin/workshops/${workshopId}`, { token });
+    return response?.data || null;
+  },
+  async getDeletedWorkshops(token) {
+    const response = await request('/admin/workshops/deleted', { token });
+    return Array.isArray(response?.data) ? response.data : [];
+  },
+  restoreWorkshop(token, workshopId) {
+    return request(`/admin/workshops/${workshopId}/restore`, { token, method: 'PATCH' });
+  },
+  async getRooms(token) {
+    const response = await request('/admin/rooms', { token });
+    return Array.isArray(response?.data) ? response.data : [];
+  },
   registerWorkshop(token, workshopId) {
     return request("/registrations", { token, method: "POST", body: { workshopId } });
   },
@@ -115,6 +142,12 @@ export const api = {
   },
   createWorkshop(token, payload) {
     return request("/admin/workshops", { token, method: "POST", body: payload });
+  },
+  updateWorkshop(token, workshopId, payload) {
+    return request(`/admin/workshops/${workshopId}`, { token, method: "PUT", body: payload });
+  },
+  deleteWorkshop(token, workshopId) {
+    return request(`/admin/workshops/${workshopId}`, { token, method: "DELETE" });
   },
   cancelWorkshop(token, workshopId) {
     return request(`/admin/workshops/${workshopId}/cancel`, { token, method: "PATCH" });

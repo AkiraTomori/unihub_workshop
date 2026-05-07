@@ -13,6 +13,7 @@ export class WorkshopService {
 
     const items = rows.map((row) => ({
       id: row.id,
+      speaker: row.speaker || null,
       title: row.title,
       description: row.description,
       cover_image_url: row.cover_image_url,
@@ -49,7 +50,7 @@ export class WorkshopService {
 
     const speaker = row.description?.startsWith('Speaker:')
       ? row.description.replace('Speaker:', '').trim()
-      : 'TBD';
+      : (row.speaker || 'TBD');
 
     return {
       id: row.id,

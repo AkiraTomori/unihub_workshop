@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge, Card, Spinner } from "../components/ui";
 import { api } from "../services/api";
+import WorkshopFilter from "../components/WorkshopFilter";
 
 export default function AdminPage({ workshops, token, onWorkshopsChanged, loading, loadError, hasLoaded, onToast }) {
-  const [title, setTitle] = useState("");
+  const navigate = useNavigate();
   const [uploadStatus, setUploadStatus] = useState("No upload yet");
   const [analytics, setAnalytics] = useState({ activeCount: 0, seatsLeft: 0, aiCompleted: 0 });
   const [csvLog, setCsvLog] = useState({ ran_at: "-", processed_rows: 0, invalid_rows: 0, upsert_conflicts: 0 });
-  const [isCreatingWorkshop, setIsCreatingWorkshop] = useState(false);
   const [cancellingWorkshopId, setCancellingWorkshopId] = useState("");
   const [isUploadingSummary, setIsUploadingSummary] = useState(false);
+  const [selectedStatuses, setSelectedStatuses] = useState(["DRAFT", "PUBLISHED"]);
 
   useEffect(() => {
     let mounted = true;
@@ -29,22 +31,6 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
       mounted = false;
     };
   }, [token, workshops]);
-
-  async function addWorkshop() {
-    if (!title.trim()) return;
-    try {
-      setIsCreatingWorkshop(true);
-      await api.createWorkshop(token, { title, speaker: "TBD", room: "TBD", date: "TBD", totalSeats: 60, fee: 0 });
-      setTitle("");
-      onWorkshopsChanged();
-      onToast?.("Workshop created.", "success");
-    } catch (error) {
-      setUploadStatus(error.message);
-      onToast?.(error.message || "Failed to create workshop", "error");
-    } finally {
-      setIsCreatingWorkshop(false);
-    }
-  }
 
   async function cancelWorkshop(id) {
     try {
@@ -78,37 +64,33 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
+        <WorkshopFilter selectedStatuses={selectedStatuses} onStatusChange={setSelectedStatuses} />
+
         <Card>
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="text-lg font-semibold">Workshop Management</h3>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => navigate("/admin/workshops/create")}
+                className="rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800"
+              >
+                Create Workshop
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/admin/workshops/deleted")}
+                className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50"
+              >
+                Deleted Workshops
+              </button>
+            </div>
             {loading ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
                 <Spinner className="h-3 w-3 border-blue-300 border-t-blue-700" />
                 Loading...
               </span>
             ) : null}
-          </div>
-          <div className="mb-3 flex gap-2">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="New workshop title"
-              className="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
-            <button
-              onClick={addWorkshop}
-              disabled={isCreatingWorkshop}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:bg-blue-400"
-            >
-              {isCreatingWorkshop ? (
-                <>
-                  <Spinner />
-                  Creating...
-                </>
-              ) : (
-                "Create"
-              )}
-            </button>
           </div>
 
           <div className="space-y-2">
@@ -140,7 +122,12 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
                 No workshops found. Create one to get started.
               </div>
             ) : null}
-            {workshops.map((w) => (
+            {!loading && !loadError && workshops.filter(w => selectedStatuses.includes(w.status)).length === 0 && selectedStatuses.length > 0 ? (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-3 text-sm text-blue-800">
+                No workshops match the selected filters.
+              </div>
+            ) : null}
+            {workshops.filter(w => selectedStatuses.includes(w.status)).map((w) => (
               <div key={w.id} className="flex flex-wrap items-center justify-between rounded-lg border border-blue-100 bg-blue-50/30 p-3">
                 <div>
                   <p className="font-semibold text-blue-950">{w.title}</p>
@@ -150,6 +137,13 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge tone={w.status === "CANCELLED" ? "red" : "green"}>{w.status}</Badge>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/admin/workshops/${w.id}/edit`)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-3 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-50"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => cancelWorkshop(w.id)}
                     disabled={cancellingWorkshopId === w.id}

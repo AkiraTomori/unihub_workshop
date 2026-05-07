@@ -15,6 +15,10 @@ export class Workshop {
       .leftJoin('documents as d', 'w.id', 'd.workshop_id');
   }
 
+  static buildAdminActiveQuery() {
+    return this.buildAdminQuery().whereNull('w.deleted_at');
+  }
+
   static async countPublished() {
     const result = await db('workshops')
       .whereNull('deleted_at')
@@ -29,6 +33,7 @@ export class Workshop {
     return this.buildPublicQuery()
       .select(
         'w.id',
+        'w.speaker',
         'w.title',
         'w.description',
         'w.cover_image_url',
@@ -51,6 +56,7 @@ export class Workshop {
       .where('w.id', id)
       .select(
         'w.id',
+        'w.speaker',
         'w.title',
         'w.description',
         'w.cover_image_url',
@@ -73,11 +79,11 @@ export class Workshop {
   }
 
   static async findById(id) {
-    return this.buildAdminQuery()
+    return this.buildAdminActiveQuery()
       .where('w.id', id)
-      .whereNull('w.deleted_at')
       .select(
         'w.id',
+        'w.speaker',
         'w.title',
         'w.description',
         'w.cover_image_url',
@@ -99,12 +105,107 @@ export class Workshop {
       .first();
   }
 
+  static async findAnyById(id) {
+    return this.buildAdminQuery()
+      .where('w.id', id)
+      .select(
+        'w.id',
+        'w.speaker',
+        'w.title',
+        'w.description',
+        'w.cover_image_url',
+        'w.status',
+        'w.start_time',
+        'w.end_time',
+        'w.capacity',
+        'w.registered_count',
+        'w.price',
+        'w.deleted_at',
+        'w.created_at',
+        'w.updated_at',
+        'r.id as room_id',
+        'r.name as room_name',
+        'r.base_capacity as room_base_capacity',
+        'd.process_status as document_status',
+        'd.ai_summary'
+      )
+      .first();
+  }
+
+  static async findAdminList({ offset, limit } = {}) {
+    let query = this.buildAdminActiveQuery()
+      .select(
+        'w.id',
+        'w.speaker',
+        'w.title',
+        'w.description',
+        'w.cover_image_url',
+        'w.status',
+        'w.start_time',
+        'w.end_time',
+        'w.capacity',
+        'w.registered_count',
+        'w.price',
+        'w.deleted_at',
+        'w.created_at',
+        'w.updated_at',
+        'r.id as room_id',
+        'r.name as room_name',
+        'r.base_capacity as room_base_capacity',
+        'd.process_status as document_status',
+        'd.ai_summary'
+      )
+      .orderBy('w.start_time', 'desc');
+
+    if (typeof limit === 'number') query = query.limit(limit);
+    if (typeof offset === 'number') query = query.offset(offset);
+
+    return query;
+  }
+
+  static async countAdmin() {
+    const result = await db('workshops')
+      .whereNull('deleted_at')
+      .countDistinct({ total: 'id' })
+      .first();
+
+    return Number(result?.total || 0);
+  }
+
+  static async findDeletedList() {
+    return this.buildAdminQuery()
+      .whereNotNull('w.deleted_at')
+      .select(
+        'w.id',
+        'w.speaker',
+        'w.title',
+        'w.description',
+        'w.cover_image_url',
+        'w.status',
+        'w.start_time',
+        'w.end_time',
+        'w.capacity',
+        'w.registered_count',
+        'w.price',
+        'w.deleted_at',
+        'w.created_at',
+        'w.updated_at',
+        'r.id as room_id',
+        'r.name as room_name',
+        'r.base_capacity as room_base_capacity',
+        'd.process_status as document_status',
+        'd.ai_summary'
+      )
+      .orderBy('w.deleted_at', 'desc');
+  }
+
   static async create(workshopData) {
     const [{ id }] = await db('workshops')
       .insert({
         room_id: workshopData.room_id,
         title: workshopData.title,
         description: workshopData.description || null,
+        speaker: workshopData.speaker || null,
         cover_image_url: workshopData.cover_image_url || null,
         start_time: workshopData.start_time,
         end_time: workshopData.end_time,
@@ -122,6 +223,7 @@ export class Workshop {
     const updateData = {};
 
     if (workshopData.room_id !== undefined) updateData.room_id = workshopData.room_id;
+    if (workshopData.speaker !== undefined) updateData.speaker = workshopData.speaker;
     if (workshopData.title !== undefined) updateData.title = workshopData.title;
     if (workshopData.description !== undefined) updateData.description = workshopData.description;
     if (workshopData.cover_image_url !== undefined) updateData.cover_image_url = workshopData.cover_image_url;
@@ -152,6 +254,23 @@ export class Workshop {
       .update({
         status: 'CANCELLED',
         deleted_at: db.fn.now(),
+        updated_at: db.fn.now(),
+      });
+
+    if (!affectedRows) {
+      return null;
+    }
+
+    return this.findAnyById(id);
+  }
+
+  static async restore(id) {
+    const affectedRows = await db('workshops')
+      .where('id', id)
+      .whereNotNull('deleted_at')
+      .update({
+        deleted_at: null,
+        status: 'DRAFT',
         updated_at: db.fn.now(),
       });
 

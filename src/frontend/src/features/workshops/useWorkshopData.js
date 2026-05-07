@@ -3,19 +3,29 @@ import { api } from "../../services/api";
 import { initialWorkshops } from "../../data/workshops";
 
 function mapWorkshop(record) {
+  const room = record.room || record.room_name || record.roomName || "TBD";
+  const dateText = record.date_text || record.date || (record.start_time ? new Date(record.start_time).toLocaleString() : "TBD");
   return {
     id: record.id,
     title: record.title,
-    speaker: record.speaker,
-    room: record.room,
-    date: record.date_text,
-    seatsLeft: record.seats_left,
-    totalSeats: record.total_seats,
-    fee: record.fee,
+    speaker: record.speaker || null,
+    room,
+    date: dateText,
+    seatsLeft: Number(record.seats_left ?? record.seatsLeft ?? Math.max(0, Number(record.capacity || record.total_seats || 0) - Number(record.registered_count || 0))),
+    totalSeats: Number(record.total_seats ?? record.capacity ?? record.totalSeats ?? 0),
+    fee: Number(record.fee ?? record.price ?? 0),
     status: record.status,
-    summaryStatus: record.summary_status,
-    summary: record.summary
+    summaryStatus: record.summary_status || record.document_status || record.summaryStatus || "PENDING",
+    summary: record.summary || record.ai_summary || ""
   };
+}
+
+function extractWorkshopRows(result) {
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result?.data)) return result.data;
+  if (Array.isArray(result?.data?.data)) return result.data.data;
+  if (Array.isArray(result?.data?.items)) return result.data.items;
+  return [];
 }
 
 export function useWorkshopData({ token, role, setSessionMessage }) {
@@ -36,16 +46,14 @@ export function useWorkshopData({ token, role, setSessionMessage }) {
     async function loadWorkshops() {
       if (mounted) setIsLoadingBackendData(true);
       try {
-        const workshopResult = await api.getWorkshops(token, { page: workshopPage, pageSize: 10 });
+        const workshopResult = role === "ADMIN"
+          ? await api.getAdminWorkshops(token, { page: workshopPage, pageSize: 10 })
+          : await api.getWorkshops(token, { page: workshopPage, pageSize: 10 });
         if (!mounted) return;
         setWorkshopError("");
-        const items = Array.isArray(workshopResult) ? workshopResult : workshopResult.data;
-        setWorkshops((items || []).map(mapWorkshop));
-        if (!Array.isArray(workshopResult) && workshopResult.pagination) {
-          setWorkshopPagination(workshopResult.pagination);
-        } else {
-          setWorkshopPagination(null);
-        }
+        const items = extractWorkshopRows(workshopResult);
+        setWorkshops(items.map(mapWorkshop));
+        setWorkshopPagination(workshopResult?.pagination || workshopResult?.data?.pagination || workshopResult?.data?.data?.pagination || null);
 
         if (role === "STUDENT") {
           const [registrations, notifications] = await Promise.all([

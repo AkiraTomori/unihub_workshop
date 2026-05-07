@@ -10,6 +10,15 @@ export function useAuthSession(navigate) {
 
   const role = authUser?.role || "";
 
+  function persistToken(nextToken) {
+    try {
+      if (nextToken) localStorage.setItem("unihub.auth.token", nextToken);
+      else localStorage.removeItem("unihub.auth.token");
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
   useEffect(() => {
     let mounted = true;
 
@@ -20,6 +29,7 @@ export function useAuthSession(navigate) {
         const user = await api.getProfile(refreshedToken);
         if (!mounted || !user) return;
         setToken(refreshedToken);
+        persistToken(refreshedToken);
         setAuthUser(user);
         setSessionMessage(`Signed in as ${user.fullName} (${user.role})`);
       } catch {
@@ -43,6 +53,7 @@ export function useAuthSession(navigate) {
         throw new Error("Invalid login response from server");
       }
       setToken(auth.token);
+      persistToken(auth.token);
       setAuthUser(auth.user);
       setSessionMessage(`Signed in as ${auth.user.fullName} (${auth.user.role})`);
       if (auth.user.role === "ADMIN") navigate("/admin/workshops");
@@ -66,6 +77,7 @@ export function useAuthSession(navigate) {
         throw new Error("Registration succeeded but auto login failed");
       }
       setToken(auth.token);
+      persistToken(auth.token);
       setAuthUser(auth.user);
       setSessionMessage(`Welcome ${auth.user.fullName}! Your account is ready.`);
       navigate("/student/workshops");
@@ -83,6 +95,7 @@ export function useAuthSession(navigate) {
       // Continue local logout even if API call fails.
     } finally {
       setToken("");
+      persistToken("");
       setAuthUser(null);
       setSessionMessage("Please sign in.");
       navigate("/login");

@@ -7,6 +7,14 @@ export class Admin {
     return room?.id || null;
   }
 
+  static async listRooms() {
+    return db('rooms').select('id', 'name', 'base_capacity').orderBy('name', 'asc');
+  }
+
+  static async getRoomById(roomId) {
+    return db('rooms').select('id', 'name', 'base_capacity').where({ id: roomId }).first();
+  }
+
   static async upsertDocument(workshopId, fileName) {
     const existing = await db('documents').where({ workshop_id: workshopId }).first();
 

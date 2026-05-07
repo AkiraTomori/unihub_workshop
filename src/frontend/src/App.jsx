@@ -4,6 +4,9 @@ import AppHeader from "./components/AppHeader";
 import AuthPanel from "./components/AuthPanel";
 import { FullScreenLoader, ToastContainer } from "./components/ui";
 import AdminPage from "./pages/AdminPage";
+import AdminWorkshopCreatePage from "./pages/AdminWorkshopCreatePage";
+import AdminWorkshopEditPage from "./pages/AdminWorkshopEditPage";
+import AdminDeletedWorkshopsPage from "./pages/AdminDeletedWorkshopsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import StudentPage from "./pages/StudentPage";
 import WorkshopDetailPage from "./pages/WorkshopDetailPage";
@@ -135,6 +138,27 @@ export default function App() {
               hasLoaded={hasLoadedWorkshops}
               onToast={pushToast}
             />
+          )}
+        />
+        <Route
+          path="/admin/workshops/create"
+          element={protectedGuard(
+            "ADMIN",
+            <AdminWorkshopCreatePage token={token} onToast={pushToast} onWorkshopsChanged={reloadWorkshops} />
+          )}
+        />
+        <Route
+          path="/admin/workshops/deleted"
+          element={protectedGuard(
+            "ADMIN",
+            <AdminDeletedWorkshopsPage token={token} onToast={pushToast} onWorkshopsChanged={reloadWorkshops} />
+          )}
+        />
+        <Route
+          path="/admin/workshops/:id/edit"
+          element={protectedGuard(
+            "ADMIN",
+            <AdminWorkshopEditPage token={token} onToast={pushToast} onWorkshopsChanged={reloadWorkshops} />
           )}
         />
         <Route
