@@ -1,6 +1,6 @@
 import { Card, Spinner } from "./ui";
 import { useEffect, useRef, useState } from "react";
-import { AtSign, IdCard, Lock, LogIn, UserPlus, UserRound } from "lucide-react";
+import { AtSign, Eye, EyeOff, IdCard, Lock, LogIn, UserPlus, UserRound } from "lucide-react";
 
 export default function AuthPanel({ sessionMessage, onLogin, onRegister, loading, isAuthenticated, authErrorType }) {
   const [mode, setMode] = useState("login");
@@ -8,6 +8,7 @@ export default function AuthPanel({ sessionMessage, onLogin, onRegister, loading
   const [studentCode, setStudentCode] = useState("");
   const [email, setEmail] = useState("huy.thai@student.edu.vn");
   const [password, setPassword] = useState("password123");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSwitchingMode, setIsSwitchingMode] = useState(false);
   const emailInputRef = useRef(null);
@@ -171,15 +172,23 @@ export default function AuthPanel({ sessionMessage, onLogin, onRegister, loading
               <div className="relative">
                 <Lock size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value);
                     if (errors.password) setErrors((prev) => ({ ...prev, password: "" }));
                   }}
                   placeholder="Password"
-                  className={`w-full rounded-lg px-9 py-2 text-sm transition focus:-translate-y-0.5 focus:outline-none focus:ring-2 ${errors.password ? "border border-rose-400 bg-rose-50/40 focus:border-rose-500 focus:ring-rose-200" : "border border-blue-200 focus:border-blue-500 focus:ring-blue-200"}`}
+                  className={`w-full rounded-lg px-9 py-2 pr-10 text-sm transition focus:-translate-y-0.5 focus:outline-none focus:ring-2 ${errors.password ? "border border-rose-400 bg-rose-50/40 focus:border-rose-500 focus:ring-rose-200" : "border border-blue-200 focus:border-blue-500 focus:ring-blue-200"}`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
               </div>
               {errors.password ? <p className="text-xs text-red-600">{errors.password}</p> : null}
               <button
