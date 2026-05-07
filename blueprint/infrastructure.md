@@ -84,109 +84,44 @@ graph TB
 
 ## Docker Compose Configuration
 
-**File: `docker-compose.yaml`** (Local services: Redis + RabbitMQ only)
+**File: `docker-compose.yaml`** (Local services: Redis + RabbitMQ only; backend runs locally)
 
 ```yaml
-version: '3.8'
-
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: unihub_redis
-    command: redis-server --requirepass ${REDIS_PASSWORD}
-    ports:
-      - "${REDIS_PORT}:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - unihub_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+   redis:
+      image: redis:7-alpine
+      container_name: unihub_redis
+      command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_local_dev_password}
+      ports:
+         - "${REDIS_PORT:-6379}:6379"
+      volumes:
+         - redis_data:/data
+      healthcheck:
+         test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_local_dev_password}", "ping"]
+         interval: 10s
+         timeout: 5s
+         retries: 5
 
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: unihub_rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    ports:
-      - "${RABBITMQ_PORT}:5672"
-      - "15672:15672"  # Management UI
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - unihub_network
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  backend:
-    build:
-      context: ./src/backend
-      dockerfile: Dockerfile
-    container_name: unihub_backend
-    environment:
-      NODE_ENV: ${NODE_ENV}
-      APP_PORT: ${APP_PORT}
-      # Database: Supabase (Cloud PostgreSQL with Connection Pooling)
-      DB_HOST: ${DB_HOST}  # e.g., aws-0-ap-southeast-1.pooler.supabase.com
-      DB_PORT: ${DB_PORT}  # 6543 (pooler) or 5432 (direct)
-      DB_NAME: ${DB_NAME}  # postgres
-      DB_USER: ${DB_USER}  # postgres.[project-ref]
-      DB_PASSWORD: ${DB_PASSWORD}  # Supabase database password
-      # Cache: Redis (Local Docker)
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      # Message Broker: RabbitMQ (Local Docker)
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      # Authentication & JWT
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      JWT_EXPIRY: ${JWT_EXPIRY}
-      # Email: Gmail SMTP (replaces SendGrid)
-      SMTP_HOST: ${SMTP_HOST}  # smtp.gmail.com
-      SMTP_PORT: ${SMTP_PORT}  # 587
-      SMTP_USER: ${SMTP_USER}  # your-email@gmail.com
-      SMTP_PASS: ${SMTP_PASS}  # 16-character App Password from Gmail
-      # Payment Gateways: VNPay & Momo
-      VNPAY_API_KEY: ${VNPAY_API_KEY}
-      VNPAY_API_ENDPOINT: ${VNPAY_API_ENDPOINT}
-      MOMO_API_KEY: ${MOMO_API_KEY}
-      MOMO_API_ENDPOINT: ${MOMO_API_ENDPOINT}
-      # AI: Vertex AI Gemini 1.5 Flash
-      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT}
-      VERTEX_AI_MODEL: ${VERTEX_AI_MODEL}  # gemini-1.5-flash-001
-      # Application
-      LOG_LEVEL: ${LOG_LEVEL}
-    ports:
-      - "${APP_PORT}:${APP_PORT}"
-    depends_on:
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    volumes:
-      - ./src/backend:/app
-      - ./storage/uploads:/uploads
-    networks:
-      - unihub_network
+   rabbitmq:
+      image: rabbitmq:3-management-alpine
+      container_name: unihub_rabbitmq
+      environment:
+         RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-workshop_user}
+         RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq_local_dev_password}
+      ports:
+         - "${RABBITMQ_PORT:-5672}:5672"
+         - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+      volumes:
+         - rabbitmq_data:/var/lib/rabbitmq
+      healthcheck:
+         test: ["CMD", "rabbitmq-diagnostics", "ping"]
+         interval: 10s
+         timeout: 5s
+         retries: 5
 
 volumes:
-  redis_data:
-  rabbitmq_data:
-
-networks:
-  unihub_network:
-    driver: bridge
+   redis_data:
+   rabbitmq_data:
 ```
 
 ## Environment Variables
@@ -370,12 +305,12 @@ DB_USER=postgres.abc123def456                      # Replace with your Supabase 
 DB_PASSWORD=your-super-strong-supabase-password   # Your Supabase database password
 
 # Cache: Redis (Local Docker)
-REDIS_HOST=redis
+REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=redis_local_dev_password
 
 # Message Queue: RabbitMQ (Local Docker)
-RABBITMQ_HOST=rabbitmq
+RABBITMQ_HOST=localhost
 RABBITMQ_PORT=5672
 RABBITMQ_USER=workshop_user
 RABBITMQ_PASSWORD=rabbitmq_local_dev_password
@@ -408,11 +343,12 @@ VERTEX_AI_MODEL=gemini-1.5-flash-001       # Flash for development (cost-optimiz
 ### Step 2: Start Docker Compose
 
 ```bash
-# Start all services in background
+# Start Redis + RabbitMQ containers in background
 docker-compose up -d
 
 # View logs
-docker-compose logs -f backend
+docker-compose logs -f redis
+docker-compose logs -f rabbitmq
 
 # Stop all services
 docker-compose down
@@ -483,8 +419,11 @@ Response (200 OK):
 ### Service Logs
 
 ```bash
-# Backend logs
-docker-compose logs -f backend
+# Redis logs
+docker-compose logs -f redis
+
+# RabbitMQ logs
+docker-compose logs -f rabbitmq
 
 # Redis logs (Local Docker)
 docker-compose logs -f redis
@@ -583,7 +522,7 @@ curl http://localhost:15672/api/health
 
 5. Check health endpoint:
    ```bash
-   curl http://localhost:3001/api/health
+   curl http://localhost:3000/health
 
 ## File Storage
 
@@ -876,21 +815,18 @@ DB_PASSWORD=your-supabase-password
 ### Step 5: Restart Backend
 
 ```bash
-# Stop old backend (with local DB)
+# Stop local containers
 docker-compose down
 
-# Update docker-compose.yaml (remove postgres service, keep redis+rabbitmq)
-# ✅ Already done in this updated infrastructure.md
-
-# Start backend with Supabase
-docker-compose up -d backend
+# Start Redis + RabbitMQ only
+docker-compose up -d
 ```
 
 ### Step 6: Verify Migration
 
 ```bash
-# Check backend health
-curl http://localhost:3001/api/health
+# Check backend health (local backend)
+curl http://localhost:3000/health
 
 # Check database connection
 npm run migrate
