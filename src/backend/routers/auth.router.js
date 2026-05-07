@@ -5,20 +5,17 @@ import {
   registerSchema,
   validateRequest,
 } from '../validations/auth.validation.js';
-import { verifyToken, rateLimit } from '../middlewares/auth.mw.js';
-import { RATE_LIMIT } from '../utils/constants.js';
+import { verifyToken } from '../middlewares/auth.mw.js';
 
 const router = express.Router();
 
 // Apply rate limiting to auth endpoints
-router.post('/login', 
-  rateLimit(RATE_LIMIT.LOGIN.maxAttempts, RATE_LIMIT.LOGIN.windowMs), 
+router.post('/login',  
   validateRequest(loginSchema), 
   (req, res) => AuthController.login(req, res)
 );
 
 router.post('/register', 
-  rateLimit(RATE_LIMIT.REGISTER.maxAttempts, RATE_LIMIT.REGISTER.windowMs), 
   validateRequest(registerSchema), 
   (req, res) => AuthController.register(req, res)
 );
@@ -30,7 +27,6 @@ router.get('/me',
 );
 
 router.post('/refresh', 
-  rateLimit(RATE_LIMIT.REFRESH.maxAttempts, RATE_LIMIT.REFRESH.windowMs), 
   (req, res) => AuthController.refresh(req, res)
 );
 
