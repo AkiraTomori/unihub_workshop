@@ -86,7 +86,6 @@ export default function App() {
       <AppHeader role={role} roleLabel={roleLabel} fullName={authUser?.fullName} onLogout={token ? handleLogout : null} />
       {showAuthPanel ? (
         <AuthPanel
-          sessionMessage={sessionMessage}
           onLogin={handleLogin}
           onRegister={handleRegister}
           loading={isSubmittingAuth}

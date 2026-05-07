@@ -2,7 +2,7 @@ import { Card, Spinner } from "./ui";
 import { useEffect, useRef, useState } from "react";
 import { AtSign, Eye, EyeOff, IdCard, Lock, LogIn, UserPlus, UserRound } from "lucide-react";
 
-export default function AuthPanel({ sessionMessage, onLogin, onRegister, loading, isAuthenticated, authErrorType }) {
+export default function AuthPanel({ onLogin, onRegister, loading, isAuthenticated, authErrorType }) {
   const [mode, setMode] = useState("login");
   const [fullName, setFullName] = useState("New Student");
   const [studentCode, setStudentCode] = useState("");
@@ -81,7 +81,9 @@ export default function AuthPanel({ sessionMessage, onLogin, onRegister, loading
     <Card className="mb-6">
       <div className="mb-2 text-center">
         <h2 className="text-lg font-semibold text-blue-950">{mode === "register" ? "Register" : "Login"}</h2>
-        <p className="mt-1 text-sm font-medium text-indigo-800">{sessionMessage}</p>
+        <p className="mt-1 text-sm text-blue-700">
+          {mode === "register" ? "Create your UniHub account in under a minute." : "Welcome back to UniHub Workshop."}
+        </p>
       </div>
       {!isAuthenticated ? (
         <form
