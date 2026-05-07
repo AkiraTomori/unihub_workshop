@@ -12,6 +12,7 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.3",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -20,6 +21,7 @@
     "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.0",
     "knex": "^3.1.0",
+    "multer": "^2.1.1",
     "pg": "^8.11.3"
   },
   "devDependencies": {

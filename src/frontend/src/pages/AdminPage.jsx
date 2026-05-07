@@ -3,14 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Badge, Card, Spinner } from "../components/ui";
 import { api } from "../services/api";
 import WorkshopFilter from "../components/WorkshopFilter";
+import DocumentManager from "../components/DocumentManager";
 
 export default function AdminPage({ workshops, token, onWorkshopsChanged, loading, loadError, hasLoaded, onToast }) {
   const navigate = useNavigate();
-  const [uploadStatus, setUploadStatus] = useState("No upload yet");
   const [analytics, setAnalytics] = useState({ activeCount: 0, seatsLeft: 0, aiCompleted: 0 });
   const [csvLog, setCsvLog] = useState({ ran_at: "-", processed_rows: 0, invalid_rows: 0, upsert_conflicts: 0 });
   const [cancellingWorkshopId, setCancellingWorkshopId] = useState("");
-  const [isUploadingSummary, setIsUploadingSummary] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState(["DRAFT", "PUBLISHED"]);
 
   useEffect(() => {
@@ -23,7 +22,6 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
         setCsvLog(csvData);
       } catch {
         if (!mounted) return;
-        setUploadStatus("Could not load admin analytics yet.");
       }
     }
     loadAdminData();
@@ -39,25 +37,9 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
       onWorkshopsChanged();
       onToast?.("Workshop cancelled.", "info");
     } catch (error) {
-      setUploadStatus(error.message);
       onToast?.(error.message || "Failed to cancel workshop", "error");
     } finally {
       setCancellingWorkshopId("");
-    }
-  }
-
-  async function uploadSummary(workshopId) {
-    try {
-      setIsUploadingSummary(true);
-      await api.uploadDocument(token, { workshopId, fileName: "workshop.pdf" });
-      setUploadStatus("PDF accepted. Status moved to PENDING and queued for async worker.");
-      onWorkshopsChanged();
-      onToast?.("PDF accepted and queued.", "success");
-    } catch (error) {
-      setUploadStatus(error.message);
-      onToast?.(error.message || "Upload failed", "error");
-    } finally {
-      setIsUploadingSummary(false);
     }
   }
 
@@ -163,35 +145,6 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
             ))}
           </div>
         </Card>
-
-        <Card>
-          <h3 className="mb-3 text-lg font-semibold">AI Summary Upload</h3>
-          <div className="flex flex-wrap items-center gap-2">
-            <input type="file" accept="application/pdf" className="block text-sm" />
-            <button
-              onClick={() => workshops[0] && uploadSummary(workshops[0].id)}
-              disabled={isUploadingSummary}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:bg-blue-400"
-            >
-              {isUploadingSummary ? (
-                <>
-                  <Spinner />
-                  Uploading...
-                </>
-              ) : (
-                "Upload PDF"
-              )}
-            </button>
-          </div>
-          <p className="mt-3 text-sm text-blue-900">{uploadStatus}</p>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Badge tone="yellow">PENDING</Badge>
-            <Badge tone="blue">PROCESSING</Badge>
-            <Badge tone="green">COMPLETED</Badge>
-            <Badge tone="red">FAILED</Badge>
-          </div>
-        </Card>
       </div>
 
       <div className="space-y-4">
@@ -212,6 +165,7 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
           <p className="text-sm">Upsert conflicts handled: {csvLog.upsert_conflicts}</p>
           <Badge tone="green">Job Completed</Badge>
         </Card>
+        <DocumentManager token={token} workshops={workshops} onToast={onToast} />
       </div>
     </div>
   );

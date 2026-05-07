@@ -78,16 +78,64 @@ export class AdminController {
 
   static async uploadDocument(req, res) {
     try {
-      const { workshopId, fileName } = req.body;
+      const { workshopId } = req.body;
+      const file = req.file;
+
       if (!workshopId) {
         return res.status(400).json({ status: 'VALIDATION_ERROR', message: 'workshopId is required' });
       }
-      const result = await AdminService.uploadDocument(workshopId, fileName);
+
+      if (!file) {
+        return res.status(400).json({ status: 'VALIDATION_ERROR', message: 'File is required' });
+      }
+
+      const result = await AdminService.uploadDocument(workshopId, file.buffer, file.originalname);
       return res.status(200).json(result);
     } catch (error) {
       return res.status(error.status || 500).json({
         status: 'ERROR',
         message: error.message || 'Failed to upload document',
+      });
+    }
+  }
+
+  static async getDocument(req, res) {
+    try {
+      const { workshopId } = req.params;
+
+      if (!workshopId) {
+        return res.status(400).json({ status: 'VALIDATION_ERROR', message: 'workshopId is required' });
+      }
+
+      const document = await AdminService.getDocument(workshopId);
+
+      if (!document) {
+        return res.status(404).json({ status: 'ERROR', message: 'Document not found' });
+      }
+
+      return res.status(200).json({ status: 'SUCCESS', data: document });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch document',
+      });
+    }
+  }
+
+  static async startDocumentSummary(req, res) {
+    try {
+      const { workshopId } = req.params;
+
+      if (!workshopId) {
+        return res.status(400).json({ status: 'VALIDATION_ERROR', message: 'workshopId is required' });
+      }
+
+      const result = await AdminService.startDocumentSummary(workshopId);
+      return res.status(200).json({ status: 'SUCCESS', message: 'Document summary started successfully', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to start document summary',
       });
     }
   }

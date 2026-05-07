@@ -38,6 +38,40 @@ async function request(path, { token, method = "GET", body } = {}) {
   return payload;
 }
 
+async function uploadFile(path, { token, file, formData: additionalData = {} } = {}) {
+  const authToken = token || getFallbackToken();
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  for (const [key, value] of Object.entries(additionalData)) {
+    formData.append(key, value);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+    },
+    body: formData
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(payload?.message || "Request failed");
+    error.status = response.status;
+    throw error;
+  }
+
+  return payload;
+}
+
 function toFrontendUser(user) {
   if (!user) return null;
   return {
@@ -152,8 +186,18 @@ export const api = {
   cancelWorkshop(token, workshopId) {
     return request(`/admin/workshops/${workshopId}/cancel`, { token, method: "PATCH" });
   },
-  uploadDocument(token, payload) {
-    return request("/admin/documents", { token, method: "POST", body: payload });
+  uploadDocument(token, workshopId, file) {
+    return uploadFile("/admin/documents", { 
+      token, 
+      file,
+      formData: { workshopId }
+    }).then(response => response?.data);
+  },
+  startDocumentSummary(token, workshopId) {
+    return request(`/admin/documents/${workshopId}/summary`, { token, method: "PATCH" }).then(response => response?.data);
+  },
+  getDocument(token, workshopId) {
+    return request(`/admin/documents/${workshopId}`, { token }).then(response => response?.data);
   },
   getAnalytics(token) {
     return request("/admin/analytics", { token });

@@ -1,5 +1,6 @@
 import Workshop from '../models/workshop.model.js';
 import Admin from '../models/admin.model.js';
+import storage from '../config/storage.js';
 
 function parseDateFallback(dateString) {
   const parsed = new Date(dateString);
@@ -183,11 +184,75 @@ export class AdminService {
     return restored;
   }
 
-  static async uploadDocument(workshopId, fileName) {
+  static async uploadDocument(workshopId, fileBuffer, originalFileName) {
     const workshop = await Workshop.findById(workshopId);
     if (!workshop) throw { status: 404, message: 'Workshop not found' };
 
-    return Admin.upsertDocument(workshopId, fileName);
+    if (!fileBuffer) throw { status: 400, message: 'No file provided' };
+
+    // Validate file type
+    if (!originalFileName.toLowerCase().endsWith('.pdf')) {
+      throw { status: 400, message: 'Only PDF files are allowed' };
+    }
+
+    // Validate file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024;
+    if (fileBuffer.length > maxSize) {
+      throw { status: 400, message: `File size exceeds limit of ${maxSize / 1024 / 1024}MB` };
+    }
+
+    try {
+      // Generate unique file name for Supabase
+      const timestamp = Date.now();
+      const fileName = `${workshopId}-${timestamp}-${originalFileName}`;
+      const bucket = process.env.DOCUMENT_BUCKET || 'documents';
+
+      // Upload to Supabase
+      const uploadResult = await storage.uploadDocument(bucket, fileName, fileBuffer, 'application/pdf');
+
+      // Store in database
+      await Admin.upsertDocumentWithUrl(workshopId, uploadResult.url);
+
+      return {
+        status: 'SUCCESS',
+        message: 'Document uploaded. AI processing started.',
+        data: {
+          workshopId,
+          pdfUrl: uploadResult.url,
+          processStatus: 'PENDING',
+        },
+      };
+    } catch (error) {
+      throw { status: 500, message: `Upload failed: ${error.message}` };
+    }
+  }
+
+  static async getDocument(workshopId) {
+    const workshop = await Workshop.findById(workshopId);
+    if (!workshop) throw { status: 404, message: 'Workshop not found' };
+
+    const document = await Admin.getDocumentByWorkshopId(workshopId);
+    if (!document) return null;
+
+    return {
+      id: document.id,
+      workshopId: document.workshop_id,
+      pdfUrl: document.pdf_url,
+      aiSummary: document.ai_summary,
+      processStatus: document.process_status,
+      createdAt: document.created_at,
+      updatedAt: document.updated_at,
+    };
+  }
+
+  static async startDocumentSummary(workshopId) {
+    const workshop = await Workshop.findById(workshopId);
+    if (!workshop) throw { status: 404, message: 'Workshop not found' };
+
+    const document = await Admin.getDocumentByWorkshopId(workshopId);
+    if (!document) throw { status: 404, message: 'Document not found' };
+
+    return Admin.updateDocumentStatus(document.id, 'PROCESSING');
   }
 
   static async getAnalytics() {
@@ -200,6 +265,10 @@ export class AdminService {
 
   static async listRooms() {
     return Admin.listRooms();
+  }
+
+  static async updateDocumentStatus(documentId, status, aiSummary = null) {
+    return Admin.updateDocumentStatus(documentId, status, aiSummary);
   }
 }
 

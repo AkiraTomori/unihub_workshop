@@ -87,6 +87,53 @@ export class Admin {
       new_payload: JSON.stringify({ status: newStatus }),
     });
   }
+
+  static async getDocumentByWorkshopId(workshopId) {
+    return db('documents')
+      .select('id', 'workshop_id', 'pdf_url', 'ai_summary', 'process_status', 'created_at', 'updated_at')
+      .where({ workshop_id: workshopId })
+      .first();
+  }
+
+  static async upsertDocumentWithUrl(workshopId, pdfUrl) {
+    const existing = await db('documents').where({ workshop_id: workshopId }).first();
+
+    if (existing) {
+      await db('documents')
+        .where({ id: existing.id })
+        .update({
+          pdf_url: pdfUrl,
+          process_status: 'PENDING',
+          updated_at: db.fn.now(),
+        });
+      return existing.id;
+    }
+
+    const [{ id }] = await db('documents')
+      .insert({
+        workshop_id: workshopId,
+        pdf_url: pdfUrl,
+        ai_summary: null,
+        process_status: 'PENDING',
+      })
+      .returning(['id']);
+
+    return id;
+  }
+
+  static async updateDocumentStatus(documentId, status, aiSummary = null) {
+    const payload = {
+      process_status: status,
+      updated_at: db.fn.now(),
+    };
+
+    if (aiSummary) {
+      payload.ai_summary = aiSummary;
+    }
+
+    await db('documents').where({ id: documentId }).update(payload);
+    return { id: documentId, process_status: status };
+  }
 }
 
 export default Admin;
