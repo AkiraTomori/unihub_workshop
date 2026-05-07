@@ -181,6 +181,32 @@ export class AdminController {
       return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to fetch check-in statistics' });
     }
   }
+
+  static async triggerCsvSync(req, res) {
+    try {
+      const result = await AdminService.triggerCsvSync();
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to trigger CSV sync',
+      });
+    }
+  }
+
+  static async getCsvSyncLogs(req, res) {
+    try {
+      const page = req.query.page ? parseInt(req.query.page) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit) : 20;
+      const result = await AdminService.getCsvSyncLogs(page, limit);
+      return res.status(200).json({ status: 'SUCCESS', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch CSV sync logs',
+      });
+    }
+  }
 }
 
 export default AdminController;

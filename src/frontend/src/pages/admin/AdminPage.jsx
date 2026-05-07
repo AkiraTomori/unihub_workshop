@@ -5,6 +5,7 @@ import { api } from "../../services/api";
 import WorkshopFilter from "../../components/WorkshopFilter";
 import DocumentManager from "../../components/DocumentManager";
 import AdminCheckinStats from "../../components/AdminCheckinStats";
+import AdminCsvSyncManager from "../../components/AdminCsvSyncManager";
 
 export default function AdminPage({ workshops, token, onWorkshopsChanged, loading, loadError, hasLoaded, onToast }) {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
     { id: "workshops", label: "Workshops", icon: "📅" },
     { id: "documents", label: "Documents", icon: "📄" },
     { id: "analytics", label: "Analytics", icon: "📊" },
+    { id: "csv-sync", label: "CSV Sync", icon: "📥" },
     { id: "deleted", label: "Deleted", icon: "🗑️" }
   ];
 
@@ -296,6 +298,11 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
           Go to Deleted Workshops Page →
         </button>
       </Card>
+      )}
+
+      {/* CSV Sync Tab */}
+      {activeTab === "csv-sync" && (
+      <AdminCsvSyncManager token={token} onToast={onToast} />
       )}
     </div>
   );

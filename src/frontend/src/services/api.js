@@ -10,7 +10,16 @@ function getFallbackToken() {
   }
 }
 
-async function request(path, { token, method = "GET", body } = {}) {
+function persistFallbackToken(nextToken) {
+  try {
+    if (nextToken) localStorage.setItem("unihub.auth.token", nextToken);
+    else localStorage.removeItem("unihub.auth.token");
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+async function request(path, { token, method = "GET", body, retryOnAuth = true } = {}) {
   const authToken = token || getFallbackToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
@@ -27,6 +36,37 @@ async function request(path, { token, method = "GET", body } = {}) {
     payload = await response.json();
   } catch {
     payload = null;
+  }
+
+  if (
+    response.status === 401
+    && retryOnAuth
+    && path !== "/auth/refresh"
+  ) {
+    try {
+      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      let refreshPayload = null;
+      try {
+        refreshPayload = await refreshResponse.json();
+      } catch {
+        refreshPayload = null;
+      }
+
+      const refreshedToken = refreshPayload?.data?.accessToken || "";
+      if (refreshResponse.ok && refreshedToken) {
+        persistFallbackToken(refreshedToken);
+        return request(path, { token: refreshedToken, method, body, retryOnAuth: false });
+      }
+    } catch {
+      // Ignore refresh failures and continue with original auth error.
+    }
   }
 
   if (!response.ok) {
@@ -211,6 +251,14 @@ export const api = {
   },
   async getCheckinStats(token) {
     const response = await request('/admin/checkins/stats', { token });
+    return response?.data || null;
+  },
+  async triggerCsvSync(token) {
+    const response = await request('/admin/csv-sync/run', { token, method: 'POST', body: {} });
+    return response;
+  },
+  async getCsvSyncLogs(token, page = 1, limit = 20) {
+    const response = await request(`/admin/csv-sync-logs?page=${page}&limit=${limit}`, { token });
     return response?.data || null;
   },
   syncCheckins(token, items) {

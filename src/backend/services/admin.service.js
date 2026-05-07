@@ -2,6 +2,7 @@ import Workshop from '../models/workshop.model.js';
 import Admin from '../models/admin.model.js';
 import Checkin from '../models/checkin.model.js';
 import Registration from '../models/registration.model.js';
+import CsvSyncService from './csv-sync.service.js';
 import storage from '../config/storage.js';
 import { publishEvent } from '../config/rabbitmq.js';
 
@@ -319,6 +320,31 @@ export class AdminService {
 
   static async getCheckinStats() {
     return await Checkin.getCheckinStats();
+  }
+
+  static async triggerCsvSync() {
+    // Use demo CSV file for now
+    // In production, this would fetch from legacy FTP/storage
+    const csvPath = process.env.CSV_FILE_PATH || './data/students.csv';
+    
+    try {
+      const result = await CsvSyncService.runSync(csvPath);
+      return result;
+    } catch (error) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'CSV sync failed',
+      };
+    }
+  }
+
+  static async getCsvSyncLogs(page = 1, limit = 20) {
+    try {
+      const result = await CsvSyncService.getAllLogs(page, limit);
+      return result;
+    } catch (error) {
+      throw { status: 500, message: error.message || 'Failed to fetch CSV sync logs' };
+    }
   }
 }
 
