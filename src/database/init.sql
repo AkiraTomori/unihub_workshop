@@ -105,6 +105,7 @@ CREATE TABLE workshops (
     room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE RESTRICT,
     title VARCHAR(255) NOT NULL,
     description TEXT, -- Mô tả hiển thị frontend
+    speaker VARCHAR(255), -- Tên diễn giả / presenter
     cover_image_url VARCHAR(255), -- Ảnh banner
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,
     end_time TIMESTAMP WITH TIME ZONE NOT NULL,
