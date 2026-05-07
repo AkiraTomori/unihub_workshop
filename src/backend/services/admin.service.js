@@ -1,6 +1,7 @@
 import Workshop from '../models/workshop.model.js';
 import Admin from '../models/admin.model.js';
 import storage from '../config/storage.js';
+import { publishEvent } from '../config/rabbitmq.js';
 
 function parseDateFallback(dateString) {
   const parsed = new Date(dateString);
@@ -211,11 +212,11 @@ export class AdminService {
       const uploadResult = await storage.uploadDocument(bucket, fileName, fileBuffer, 'application/pdf');
 
       // Store in database
-      await Admin.upsertDocumentWithUrl(workshopId, uploadResult.url);
+      const documentId = await Admin.upsertDocumentWithUrl(workshopId, uploadResult.url);
 
       return {
         status: 'SUCCESS',
-        message: 'Document uploaded. AI processing started.',
+        message: 'Document uploaded. Click AI Summary to start processing.',
         data: {
           workshopId,
           pdfUrl: uploadResult.url,
@@ -252,7 +253,29 @@ export class AdminService {
     const document = await Admin.getDocumentByWorkshopId(workshopId);
     if (!document) throw { status: 404, message: 'Document not found' };
 
-    return Admin.updateDocumentStatus(document.id, 'PROCESSING');
+    try {
+      await publishEvent('document.uploaded', {
+        workshopId,
+        documentId: document.id,
+        pdfUrl: document.pdf_url,
+        createdAt: new Date().toISOString(),
+      });
+
+      console.log(`[AdminService] Published DocumentUploaded event for document ${document.id}`);
+
+      return {
+        status: 'SUCCESS',
+        message: 'AI summary processing started.',
+        data: {
+          workshopId,
+          documentId: document.id,
+          processStatus: 'PENDING',
+        },
+      };
+    } catch (error) {
+      console.error(`[AdminService] Failed to publish event: ${error.message}`);
+      throw { status: 500, message: `Failed to start AI summary: ${error.message}` };
+    }
   }
 
   static async getAnalytics() {

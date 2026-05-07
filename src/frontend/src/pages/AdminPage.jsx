@@ -109,40 +109,50 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
                 No workshops match the selected filters.
               </div>
             ) : null}
-            {workshops.filter(w => selectedStatuses.includes(w.status)).map((w) => (
-              <div key={w.id} className="flex flex-wrap items-center justify-between rounded-lg border border-blue-100 bg-blue-50/30 p-3">
-                <div>
-                  <p className="font-semibold text-blue-950">{w.title}</p>
-                  <p className="text-sm text-blue-800">
-                    {w.id} • {w.room} • {w.date}
-                  </p>
+            {workshops.filter(w => selectedStatuses.includes(w.status)).map((w) => {
+              const statusTone =
+                w.status === "DRAFT" ? "yellow" : w.status === "PUBLISHED" ? "green" : "red";
+
+              return (
+                <div
+                  key={w.id}
+                  className="flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50/30 p-3 md:flex-row md:items-center md:justify-between"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-blue-950">{w.title}</p>
+                    <p className="text-sm text-blue-800">
+                      {w.room} • {w.date}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                    <Badge tone={statusTone}>{w.status}</Badge>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/admin/workshops/${w.id}/edit`)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-3 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-50"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cancelWorkshop(w.id)}
+                      disabled={cancellingWorkshopId === w.id}
+                      className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-3 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-50 disabled:opacity-50"
+                    >
+                      {cancellingWorkshopId === w.id ? (
+                        <>
+                          <Spinner className="h-3 w-3 border-blue-300 border-t-blue-700" />
+                          Cancelling...
+                        </>
+                      ) : (
+                        "Cancel"
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge tone={w.status === "CANCELLED" ? "red" : "green"}>{w.status}</Badge>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/admin/workshops/${w.id}/edit`)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-3 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-50"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => cancelWorkshop(w.id)}
-                    disabled={cancellingWorkshopId === w.id}
-                    className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-3 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-50 disabled:opacity-50"
-                  >
-                    {cancellingWorkshopId === w.id ? (
-                      <>
-                        <Spinner className="h-3 w-3 border-blue-300 border-t-blue-700" />
-                        Cancelling...
-                      </>
-                    ) : (
-                      "Cancel"
-                    )}
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </div>

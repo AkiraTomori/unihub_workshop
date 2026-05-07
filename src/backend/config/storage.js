@@ -7,16 +7,22 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error("Missing Supabase configuration in environment variables");
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-});
+const supabase = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    })
+  : null;
 
 export const storage = {
   async uploadDocument(bucket, fileName, fileBuffer, contentType = "application/pdf") {
     try {
+      if (!supabase) {
+        throw new Error("Supabase client is not configured");
+      }
+
       const { data, error } = await supabase.storage
         .from(bucket)
         .upload(fileName, fileBuffer, {
@@ -43,6 +49,10 @@ export const storage = {
 
   async deleteDocument(bucket, fileName) {
     try {
+      if (!supabase) {
+        throw new Error("Supabase client is not configured");
+      }
+
       const { error } = await supabase.storage
         .from(bucket)
         .remove([fileName]);
@@ -58,6 +68,10 @@ export const storage = {
   },
 
   async getPublicUrl(bucket, fileName) {
+    if (!supabase) {
+      throw new Error("Supabase client is not configured");
+    }
+
     const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
     return data.publicUrl;
   },
