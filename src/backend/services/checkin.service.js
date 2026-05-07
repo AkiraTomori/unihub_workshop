@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import db from '../config/db.js';
 import Checkin from '../models/checkin.model.js';
 
 export class CheckinService {

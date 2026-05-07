@@ -241,9 +241,9 @@ export default function StudentPage({
               </div>
             ) : null}
             {sortedWorkshops.map((w) => (
-              <div key={w.id} className="rounded-lg border border-blue-100 bg-blue-50/30 p-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
+              <div key={w.id} className="rounded-lg border border-blue-100 bg-blue-50/30 p-3 md:min-h-[176px]">
+                <div className="flex flex-col gap-3 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-stretch md:gap-4">
+                  <div className="min-w-0 flex-1">
                     <p className="font-semibold text-blue-950">{w.title}</p>
                     <p className="text-sm text-blue-800">
                       {w.speaker} • {w.room} • {w.date}
@@ -259,9 +259,9 @@ export default function StudentPage({
                       Seats: <span className="font-semibold">{w.seatsLeft}/{w.totalSeats}</span>
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="flex min-w-[220px] flex-col justify-end text-right md:min-h-[140px]">
                     <p className="mb-2 text-sm font-semibold">{w.fee === 0 ? "Free" : `${w.fee.toLocaleString()} VND`}</p>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="mt-auto flex items-center justify-end gap-2">
                       <Link
                         to={`/student/workshops/${w.id}`}
                         className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50"

@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import db from '../config/db.js';
 import Registration from '../models/registration.model.js';
 
 function generateQrCode() {
