@@ -24,6 +24,7 @@ export default function App() {
     setSessionMessage,
     isSubmittingAuth,
     isHydratingSession,
+    authErrorType,
     handleLogin,
     handleRegister,
     handleLogout
@@ -90,6 +91,7 @@ export default function App() {
           onRegister={handleRegister}
           loading={isSubmittingAuth}
           isAuthenticated={Boolean(token)}
+          authErrorType={authErrorType}
         />
       ) : null}
       <Routes>

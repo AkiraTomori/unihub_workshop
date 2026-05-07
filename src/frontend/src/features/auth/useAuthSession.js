@@ -7,6 +7,7 @@ export function useAuthSession(navigate) {
   const [sessionMessage, setSessionMessage] = useState("Please sign in.");
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [isHydratingSession, setIsHydratingSession] = useState(true);
+  const [authErrorType, setAuthErrorType] = useState("");
 
   const role = authUser?.role || "";
 
@@ -48,6 +49,7 @@ export function useAuthSession(navigate) {
   async function handleLogin(email, password) {
     try {
       setIsSubmittingAuth(true);
+      setAuthErrorType("");
       const auth = await api.login(email, password);
       if (!auth?.token || !auth?.user) {
         throw new Error("Invalid login response from server");
@@ -62,7 +64,10 @@ export function useAuthSession(navigate) {
         navigate("/mobile-only");
       } else navigate("/student/workshops");
     } catch (error) {
-      setSessionMessage(error.message);
+      const message = error.message || "Login failed";
+      const isInvalidCredentialError = /invalid email or password/i.test(message);
+      setAuthErrorType(isInvalidCredentialError ? "INVALID_CREDENTIALS" : "GENERIC");
+      setSessionMessage(message);
     } finally {
       setIsSubmittingAuth(false);
     }
@@ -71,6 +76,7 @@ export function useAuthSession(navigate) {
   async function handleRegister({ fullName, studentCode, email, password }) {
     try {
       setIsSubmittingAuth(true);
+      setAuthErrorType("");
       await api.register({ fullName, studentCode, email, password });
       const auth = await api.login(email, password);
       if (!auth?.token || !auth?.user) {
@@ -97,6 +103,7 @@ export function useAuthSession(navigate) {
       setToken("");
       persistToken("");
       setAuthUser(null);
+      setAuthErrorType("");
       setSessionMessage("Please sign in.");
       navigate("/login");
     }
@@ -110,6 +117,7 @@ export function useAuthSession(navigate) {
     setSessionMessage,
     isSubmittingAuth,
     isHydratingSession,
+    authErrorType,
     handleLogin,
     handleRegister,
     handleLogout
