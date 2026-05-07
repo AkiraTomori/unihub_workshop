@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import db from '../config/db.js';
+import Checkin from '../models/checkin.model.js';
 
 export class CheckinService {
   static async scanByQr(qrCode, deviceId = 'mobile-checker') {
@@ -7,25 +7,13 @@ export class CheckinService {
       throw { status: 400, message: 'qrCode is required' };
     }
 
-    const registration = await db('registrations as r')
-      .join('users as u', 'r.user_id', 'u.id')
-      .join('workshops as w', 'r.workshop_id', 'w.id')
-      .where('r.qr_code', qrCode)
-      .where('r.status', 'CONFIRMED')
-      .select(
-        'r.id',
-        'u.full_name as student_name',
-        'w.title as workshop_title'
-      )
-      .first();
+    const registration = await Checkin.findRegistrationByQr(qrCode);
 
     if (!registration) {
       throw { status: 404, message: 'Invalid QR code or registration not confirmed' };
     }
 
-    const existing = await db('checkins')
-      .where({ registration_id: registration.id })
-      .first();
+    const existing = await Checkin.findByRegistrationId(registration.id);
 
     if (existing) {
       return {
@@ -35,7 +23,7 @@ export class CheckinService {
       };
     }
 
-    await db('checkins').insert({
+    await Checkin.createCheckin(db, {
       id: randomUUID(),
       registration_id: registration.id,
       device_id: deviceId,
@@ -56,7 +44,7 @@ export class CheckinService {
     for (const item of items) {
       if (!item?.offlineSyncId) continue;
 
-      const existing = await db('checkins').where({ offline_sync_id: item.offlineSyncId }).first();
+      const existing = await Checkin.findByOfflineSyncId(item.offlineSyncId);
       if (existing) {
         results.push({ offlineSyncId: item.offlineSyncId, status: 'DUPLICATE' });
         continue;
@@ -67,7 +55,7 @@ export class CheckinService {
         continue;
       }
 
-      await db('checkins').insert({
+      await Checkin.createCheckin(db, {
         id: randomUUID(),
         registration_id: item.registrationId,
         device_id: 'web-checker',
