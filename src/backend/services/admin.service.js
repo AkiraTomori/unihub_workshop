@@ -1,5 +1,7 @@
 import Workshop from '../models/workshop.model.js';
 import Admin from '../models/admin.model.js';
+import Checkin from '../models/checkin.model.js';
+import Registration from '../models/registration.model.js';
 import storage from '../config/storage.js';
 import { publishEvent } from '../config/rabbitmq.js';
 
@@ -292,6 +294,31 @@ export class AdminService {
 
   static async updateDocumentStatus(documentId, status, aiSummary = null) {
     return Admin.updateDocumentStatus(documentId, status, aiSummary);
+  }
+
+  static async getWorkshopRegistrations(workshopId) {
+    const workshop = await Workshop.findById(workshopId);
+    if (!workshop) throw { status: 404, message: 'Workshop not found' };
+
+    const registrations = await Registration.listByWorkshop(workshopId);
+    return {
+      workshopId,
+      workshopTitle: workshop.title,
+      totalRegistrations: registrations.length,
+      registrations: registrations.map((r) => ({
+        id: r.id,
+        userId: r.user_id,
+        fullName: r.full_name,
+        email: r.email,
+        studentCode: r.student_code,
+        status: r.status,
+        registeredAt: r.created_at,
+      })),
+    };
+  }
+
+  static async getCheckinStats() {
+    return await Checkin.getCheckinStats();
   }
 }
 

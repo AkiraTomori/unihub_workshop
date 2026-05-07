@@ -205,6 +205,14 @@ export const api = {
   getCsvLatest(token) {
     return request("/admin/csv-sync/latest", { token });
   },
+  async getWorkshopRegistrations(token, workshopId) {
+    const response = await request(`/admin/workshops/${workshopId}/registrations`, { token });
+    return response?.data || null;
+  },
+  async getCheckinStats(token) {
+    const response = await request('/admin/checkins/stats', { token });
+    return response?.data || null;
+  },
   syncCheckins(token, items) {
     return request("/checkins/sync", { token, method: "POST", body: { items } });
   }

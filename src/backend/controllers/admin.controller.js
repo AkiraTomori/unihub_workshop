@@ -163,6 +163,24 @@ export class AdminController {
       });
     }
   }
+
+  static async getWorkshopRegistrations(req, res) {
+    try {
+      const result = await AdminService.getWorkshopRegistrations(req.params.workshopId);
+      return res.status(200).json({ status: 'SUCCESS', message: 'Workshop registrations retrieved successfully', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to fetch workshop registrations' });
+    }
+  }
+
+  static async getCheckinStats(req, res) {
+    try {
+      const result = await AdminService.getCheckinStats();
+      return res.status(200).json({ status: 'SUCCESS', message: 'Check-in statistics retrieved successfully', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to fetch check-in statistics' });
+    }
+  }
 }
 
 export default AdminController;

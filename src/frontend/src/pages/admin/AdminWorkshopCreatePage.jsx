@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, Spinner } from "../components/ui";
-import { api } from "../services/api";
+import { Card, Spinner } from "../../components/ui";
+import { api } from "../../services/api";
 
 function toInputDateTime(value) {
   if (!value) return "";
@@ -92,13 +92,6 @@ export default function AdminWorkshopCreatePage({ token, onToast, onWorkshopsCha
             <h2 className="text-2xl font-bold text-blue-950">Create Workshop</h2>
             <p className="text-sm text-blue-800">Fill in all workshop details except images.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/admin/workshops")}
-            className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900"
-          >
-            Back
-          </button>
         </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">

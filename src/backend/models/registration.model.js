@@ -78,6 +78,23 @@ export class Registration {
       status: 'PENDING',
     });
   }
+
+  static async listByWorkshop(workshopId) {
+    return db('registrations as r')
+      .join('users as u', 'r.user_id', 'u.id')
+      .where('r.workshop_id', workshopId)
+      .whereNot('r.status', 'CANCELLED')
+      .select(
+        'r.id',
+        'r.user_id',
+        'r.status',
+        'r.created_at',
+        'u.full_name',
+        'u.email',
+        'u.student_code'
+      )
+      .orderBy('r.created_at', 'desc');
+  }
 }
 
 export default Registration;

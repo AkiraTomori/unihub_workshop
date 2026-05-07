@@ -3,10 +3,11 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import AppHeader from "./components/AppHeader";
 import AuthPanel from "./components/AuthPanel";
 import { FullScreenLoader, ToastContainer } from "./components/ui";
-import AdminPage from "./pages/AdminPage";
-import AdminWorkshopCreatePage from "./pages/AdminWorkshopCreatePage";
-import AdminWorkshopEditPage from "./pages/AdminWorkshopEditPage";
-import AdminDeletedWorkshopsPage from "./pages/AdminDeletedWorkshopsPage";
+import AdminPage from "./pages/admin/AdminPage";
+import AdminWorkshopCreatePage from "./pages/admin/AdminWorkshopCreatePage";
+import AdminWorkshopEditPage from "./pages/admin/AdminWorkshopEditPage";
+import AdminWorkshopParticipantsPage from "./pages/admin/AdminWorkshopParticipantsPage";
+import AdminDeletedWorkshopsPage from "./pages/admin/AdminDeletedWorkshopsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import StudentPage from "./pages/StudentPage";
 import WorkshopDetailPage from "./pages/WorkshopDetailPage";
@@ -160,6 +161,13 @@ export default function App() {
           element={protectedGuard(
             "ADMIN",
             <AdminWorkshopEditPage token={token} onToast={pushToast} onWorkshopsChanged={reloadWorkshops} />
+          )}
+        />
+        <Route
+          path="/admin/workshops/:workshopId/participants"
+          element={protectedGuard(
+            "ADMIN",
+            <AdminWorkshopParticipantsPage token={token} onToast={pushToast} />
           )}
         />
         <Route
