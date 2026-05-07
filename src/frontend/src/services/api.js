@@ -83,6 +83,10 @@ export const api = {
       throw error;
     }
   },
+  async getWorkshopDetail(token, workshopId) {
+    const response = await request(`/workshops/${workshopId}`, { token });
+    return response?.data || null;
+  },
   registerWorkshop(token, workshopId) {
     return request("/registrations", { token, method: "POST", body: { workshopId } });
   },

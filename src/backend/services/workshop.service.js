@@ -40,6 +40,34 @@ export class WorkshopService {
       },
     };
   }
+
+  static async getPublishedDetail(workshopId) {
+    const row = await Workshop.findPublishedById(workshopId);
+    if (!row) {
+      throw { status: 404, message: 'Workshop not found' };
+    }
+
+    const speaker = row.description?.startsWith('Speaker:')
+      ? row.description.replace('Speaker:', '').trim()
+      : 'TBD';
+
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description || '',
+      speaker,
+      room: row.room_name || 'TBD',
+      room_map_image_url: row.room_map_image_url || '',
+      start_time: row.start_time,
+      end_time: row.end_time,
+      seats_left: Math.max(0, Number(row.capacity || 0) - Number(row.registered_count || 0)),
+      total_seats: Number(row.capacity || 0),
+      fee: Number(row.price || 0),
+      status: row.status,
+      summary_status: row.document_status || 'PENDING',
+      summary: row.ai_summary || '',
+    };
+  }
 }
 
 export default WorkshopService;

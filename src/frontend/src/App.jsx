@@ -6,6 +6,7 @@ import { FullScreenLoader, ToastContainer } from "./components/ui";
 import AdminPage from "./pages/AdminPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import StudentPage from "./pages/StudentPage";
+import WorkshopDetailPage from "./pages/WorkshopDetailPage";
 import { useAuthSession } from "./features/auth/useAuthSession";
 import { useWorkshopData } from "./features/workshops/useWorkshopData";
 
@@ -105,6 +106,18 @@ export default function App() {
               loading={isLoadingBackendData}
               loadError={workshopError}
               hasLoaded={hasLoadedWorkshops}
+              onToast={pushToast}
+            />
+          )}
+        />
+        <Route
+          path="/student/workshops/:workshopId"
+          element={protectedGuard(
+            "STUDENT",
+            <WorkshopDetailPage
+              token={token}
+              myRegistrations={myRegistrations}
+              onWorkshopsChanged={reloadWorkshops}
               onToast={pushToast}
             />
           )}

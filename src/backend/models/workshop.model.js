@@ -64,6 +64,7 @@ export class Workshop {
         'w.updated_at',
         'r.id as room_id',
         'r.name as room_name',
+        'r.map_image_url as room_map_image_url',
         'r.base_capacity as room_base_capacity',
         'd.process_status as document_status',
         'd.ai_summary'

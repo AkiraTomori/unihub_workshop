@@ -1,5 +1,6 @@
 import { useState } from "react";
 import QRCode from "react-qr-code";
+import { Link } from "react-router-dom";
 import { Badge, Card, Spinner } from "../components/ui";
 import { api } from "../services/api";
 
@@ -260,26 +261,34 @@ export default function StudentPage({
                   </div>
                   <div className="text-right">
                     <p className="mb-2 text-sm font-semibold">{w.fee === 0 ? "Free" : `${w.fee.toLocaleString()} VND`}</p>
-                    <button
-                      onClick={() => requestRegisterConfirmation(w)}
-                      className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"
-                      disabled={w.seatsLeft <= 0 || registeredWorkshopIds.has(w.id) || submittingWorkshopId === w.id}
-                    >
-                      {submittingWorkshopId === w.id
-                        ? (
-                          <>
-                            <Spinner />
-                            Registering...
-                          </>
-                        )
-                        : w.seatsLeft <= 0
-                        ? "Sold Out"
-                        : registrationByWorkshopId.get(w.id)?.status === "PENDING_PAYMENT"
-                        ? "Pending Payment"
-                        : registeredWorkshopIds.has(w.id)
-                        ? "Registered"
-                        : "Register"}
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Link
+                        to={`/student/workshops/${w.id}`}
+                        className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50"
+                      >
+                        Details
+                      </Link>
+                      <button
+                        onClick={() => requestRegisterConfirmation(w)}
+                        className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"
+                        disabled={w.seatsLeft <= 0 || registeredWorkshopIds.has(w.id) || submittingWorkshopId === w.id}
+                      >
+                        {submittingWorkshopId === w.id
+                          ? (
+                            <>
+                              <Spinner />
+                              Registering...
+                            </>
+                          )
+                          : w.seatsLeft <= 0
+                          ? "Sold Out"
+                          : registrationByWorkshopId.get(w.id)?.status === "PENDING_PAYMENT"
+                          ? "Pending Payment"
+                          : registeredWorkshopIds.has(w.id)
+                          ? "Registered"
+                          : "Register"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

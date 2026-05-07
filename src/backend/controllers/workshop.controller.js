@@ -12,6 +12,18 @@ export class WorkshopController {
       });
     }
   }
+
+  static async detail(req, res) {
+    try {
+      const result = await WorkshopService.getPublishedDetail(req.params.workshopId);
+      return res.status(200).json({ data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch workshop detail',
+      });
+    }
+  }
 }
 
 export default WorkshopController;
