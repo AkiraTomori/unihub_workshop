@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import db from '../config/db.js';
+import Registration from '../models/registration.model.js';
 
 function generateQrCode() {
   return `UNI-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
@@ -8,19 +8,13 @@ function generateQrCode() {
 export class RegistrationService {
   static async createRegistration(userId, workshopId) {
     return db.transaction(async (trx) => {
-      const workshop = await trx('workshops')
-        .where({ id: workshopId })
-        .whereNull('deleted_at')
-        .first();
+      const workshop = await Registration.findWorkshopById(workshopId, trx);
 
       if (!workshop || workshop.status !== 'PUBLISHED') {
         throw { status: 404, message: 'Workshop not found or unavailable' };
       }
 
-      const activeRegistration = await trx('registrations')
-        .where({ user_id: userId, workshop_id: workshopId })
-        .whereNot('status', 'CANCELLED')
-        .first();
+      const activeRegistration = await Registration.findActiveRegistration(userId, workshopId, trx);
 
       if (activeRegistration) {
         return {
@@ -42,7 +36,7 @@ export class RegistrationService {
       const expiresAt = isPaidWorkshop ? trx.raw(`NOW() + INTERVAL '15 minutes'`) : null;
       const status = isPaidWorkshop ? 'PENDING_PAYMENT' : 'CONFIRMED';
 
-      await trx('registrations').insert({
+      await Registration.createRegistration(trx, {
         id: registrationId,
         user_id: userId,
         workshop_id: workshopId,
@@ -52,8 +46,8 @@ export class RegistrationService {
       });
 
       if (!isPaidWorkshop) {
-        await trx('workshops').where({ id: workshopId }).increment('registered_count', 1);
-        await this._enqueueRegistrationSideEffects(trx, userId, registrationId, workshop.title);
+        await Registration.incrementWorkshopRegisteredCount(workshopId, trx);
+        await Registration.enqueueRegistrationSideEffects(trx, userId, registrationId, workshop.title);
       }
 
       return {
@@ -66,40 +60,7 @@ export class RegistrationService {
   }
 
   static async listMyRegistrations(userId) {
-    return db('registrations as r')
-      .join('workshops as w', 'r.workshop_id', 'w.id')
-      .where('r.user_id', userId)
-      .whereNot('r.status', 'CANCELLED')
-      .select(
-        'r.id',
-        'r.workshop_id',
-        'r.status',
-        'r.qr_code',
-        'w.title as workshop_title',
-        'w.start_time as workshop_date'
-      )
-      .orderBy('r.created_at', 'desc');
-  }
-
-  static async _enqueueRegistrationSideEffects(trx, userId, registrationId, workshopTitle) {
-    await trx('outbox_events').insert({
-      id: randomUUID(),
-      aggregate_id: registrationId,
-      event_type: 'registration.confirmed',
-      payload: JSON.stringify({ registrationId }),
-      status: 'PENDING',
-    });
-
-    await trx('notifications').insert({
-      id: randomUUID(),
-      user_id: userId,
-      channel: 'IN_APP',
-      template: 'registration_confirm',
-      subject: 'Registration Confirmed',
-      content: `Your registration is confirmed for ${workshopTitle}.`,
-      recipient: '',
-      status: 'PENDING',
-    });
+    return Registration.listMyRegistrations(userId);
   }
 }
 

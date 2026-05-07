@@ -1,0 +1,83 @@
+import { randomUUID } from 'crypto';
+import db from '../config/db.js';
+
+export class Registration {
+  static async findWorkshopById(workshopId, trx = db) {
+    return trx('workshops')
+      .where({ id: workshopId })
+      .whereNull('deleted_at')
+      .first();
+  }
+
+  static async findActiveRegistration(userId, workshopId, trx = db) {
+    return trx('registrations')
+      .where({ user_id: userId, workshop_id: workshopId })
+      .whereNot('status', 'CANCELLED')
+      .first();
+  }
+
+  static async createRegistration(trx, registrationData) {
+    await trx('registrations').insert(registrationData);
+  }
+
+  static async incrementWorkshopRegisteredCount(workshopId, trx = db) {
+    await trx('workshops').where({ id: workshopId }).increment('registered_count', 1);
+  }
+
+  static async listMyRegistrations(userId) {
+    return db('registrations as r')
+      .join('workshops as w', 'r.workshop_id', 'w.id')
+      .where('r.user_id', userId)
+      .whereNot('r.status', 'CANCELLED')
+      .select(
+        'r.id',
+        'r.workshop_id',
+        'r.status',
+        'r.qr_code',
+        'w.title as workshop_title',
+        'w.start_time as workshop_date'
+      )
+      .orderBy('r.created_at', 'desc');
+  }
+
+  static async findRegistrationForCheckout(userId, registrationId, trx = db) {
+    return trx('registrations as r')
+      .join('workshops as w', 'r.workshop_id', 'w.id')
+      .where('r.id', registrationId)
+      .where('r.user_id', userId)
+      .select(
+        'r.id',
+        'r.user_id',
+        'r.workshop_id',
+        'r.status as registration_status',
+        'r.qr_code',
+        'w.title as workshop_title',
+        'w.price',
+        'w.registered_count'
+      )
+      .first();
+  }
+
+  static async enqueueRegistrationSideEffects(trx, userId, registrationId, workshopTitle) {
+    await trx('outbox_events').insert({
+      id: randomUUID(),
+      aggregate_id: registrationId,
+      event_type: 'registration.confirmed',
+      payload: JSON.stringify({ registrationId }),
+      status: 'PENDING',
+    });
+
+    await trx('notifications').insert({
+      id: randomUUID(),
+      user_id: userId,
+      channel: 'IN_APP',
+      template: 'registration_confirm',
+      subject: 'Registration Confirmed',
+      content: `Your registration is confirmed for ${workshopTitle}.`,
+      recipient: '',
+      status: 'PENDING',
+    });
+  }
+}
+
+export default Registration;

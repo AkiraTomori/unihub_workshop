@@ -1,31 +1,17 @@
 import { randomUUID } from 'crypto';
-import db from '../config/db.js';
-import RegistrationService from './registration.service.js';
+import Payment from '../models/payment.model.js';
+import Registration from '../models/registration.model.js';
 
 export class PaymentService {
   static async checkout({ userId, registrationId, idempotencyKey, simulateResult = 'success' }) {
     return db.transaction(async (trx) => {
-      const registration = await trx('registrations as r')
-        .join('workshops as w', 'r.workshop_id', 'w.id')
-        .where('r.id', registrationId)
-        .where('r.user_id', userId)
-        .select(
-          'r.id',
-          'r.user_id',
-          'r.workshop_id',
-          'r.status as registration_status',
-          'r.qr_code',
-          'w.title as workshop_title',
-          'w.price',
-          'w.registered_count'
-        )
-        .first();
+      const registration = await Payment.findRegistrationForCheckout(userId, registrationId, trx);
 
       if (!registration) {
         throw { status: 404, message: 'Registration not found' };
       }
 
-      const existingByKey = await trx('payments').where({ idempotency_key: idempotencyKey }).first();
+      const existingByKey = await Payment.findByIdempotencyKey(idempotencyKey, trx);
       if (existingByKey) {
         if (existingByKey.status === 'SUCCESS') {
           return { status: 'CONFIRMED', qrCode: registration.qr_code, message: 'Payment already confirmed' };
@@ -33,29 +19,23 @@ export class PaymentService {
         return { status: 'PENDING_PAYMENT', message: 'Payment is pending. Please retry.' };
       }
 
-      let payment = await trx('payments').where({ registration_id: registration.id }).first();
+      let payment = await Payment.findByRegistrationId(registration.id, trx);
       if (!payment) {
-        const [created] = await trx('payments')
-          .insert({
-            id: randomUUID(),
-            registration_id: registration.id,
-            amount: registration.price,
-            provider: 'VNPAY',
-            transaction_id: null,
-            idempotency_key: idempotencyKey,
-            status: simulateResult === 'success' ? 'SUCCESS' : 'PENDING',
-          })
-          .returning(['id', 'status']);
-        payment = created;
+        payment = await Payment.createPayment(trx, {
+          id: randomUUID(),
+          registration_id: registration.id,
+          amount: registration.price,
+          provider: 'VNPAY',
+          transaction_id: null,
+          idempotency_key: idempotencyKey,
+          status: simulateResult === 'success' ? 'SUCCESS' : 'PENDING',
+        });
       } else {
-        await trx('payments')
-          .where({ id: payment.id })
-          .update({
-            idempotency_key: idempotencyKey,
-            status: simulateResult === 'success' ? 'SUCCESS' : 'PENDING',
-            transaction_id: simulateResult === 'success' ? `VNPAY-${Date.now()}` : payment.transaction_id,
-            updated_at: trx.fn.now(),
-          });
+        await Payment.updatePaymentStatus(trx, payment.id, {
+          idempotency_key: idempotencyKey,
+          status: simulateResult === 'success' ? 'SUCCESS' : 'PENDING',
+          transaction_id: simulateResult === 'success' ? `VNPAY-${Date.now()}` : payment.transaction_id,
+        });
       }
 
       if (simulateResult !== 'success') {
@@ -66,15 +46,9 @@ export class PaymentService {
       }
 
       if (registration.registration_status !== 'CONFIRMED') {
-        await trx('registrations')
-          .where({ id: registration.id })
-          .update({
-            status: 'CONFIRMED',
-            expires_at: null,
-            updated_at: trx.fn.now(),
-          });
-        await trx('workshops').where({ id: registration.workshop_id }).increment('registered_count', 1);
-        await RegistrationService._enqueueRegistrationSideEffects(
+        await Payment.confirmRegistration(trx, registration.id);
+        await Payment.incrementWorkshopRegisteredCount(trx, registration.workshop_id);
+        await Registration.enqueueRegistrationSideEffects(
           trx,
           registration.user_id,
           registration.id,

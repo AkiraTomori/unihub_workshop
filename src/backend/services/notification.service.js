@@ -1,12 +1,8 @@
-import db from '../config/db.js';
+import Notification from '../models/notification.model.js';
 
 export class NotificationService {
   static async listMyNotifications(userId) {
-    const rows = await db('notifications')
-      .where({ user_id: userId })
-      .orderBy('created_at', 'desc')
-      .limit(50)
-      .select('id', 'channel', 'subject', 'content', 'status', 'created_at');
+    const rows = await Notification.listByUser(userId);
 
     return rows.map((row) => ({
       id: row.id,
