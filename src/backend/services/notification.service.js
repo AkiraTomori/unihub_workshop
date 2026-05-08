@@ -9,11 +9,28 @@ export class NotificationService {
     return rows.map((row) => ({
       id: row.id,
       channel: row.channel,
+      template: row.template,
       title: row.subject,
       message: row.content || '',
       status: row.status,
+      recipient: row.recipient,
+      read_at: row.read_at,
+      is_read: Boolean(row.read_at),
       created_at: row.created_at,
     }));
+  }
+
+  static async markNotificationAsRead(userId, notificationId) {
+    const updated = await Notification.markAsRead(notificationId, userId);
+
+    if (!updated) {
+      throw { status: 404, message: 'Notification not found' };
+    }
+
+    return {
+      id: updated.id,
+      read_at: updated.read_at,
+    };
   }
 
   static async getFailedNotificationsList() {

@@ -356,9 +356,14 @@ export default function StudentPage({
 
         <div className="space-y-4">
           <Card>
-            <h3 className="mb-2 text-lg font-semibold">Notifications</h3>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold">Notifications</h3>
+              <Link to="/student/notifications" className="text-sm font-medium text-blue-900 underline underline-offset-2">
+                View all
+              </Link>
+            </div>
             <p className="text-sm text-blue-900">{notice}</p>
-            <p className="mt-2 text-xs text-blue-700">Asynchronous delivery via outbox worker (In-app + Email simulation).</p>
+            <p className="mt-2 text-xs text-blue-700">Asynchronous delivery via outbox worker (Email + in-app delivery records).</p>
             <div className="mt-3 max-h-48 space-y-2 overflow-auto">
               {(notifications || []).length === 0 ? (
                 <p className="text-xs text-blue-700">No delivered notifications yet.</p>

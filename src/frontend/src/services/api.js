@@ -207,6 +207,9 @@ export const api = {
       throw error;
     }
   },
+  async markNotificationAsRead(token, notificationId) {
+    return request(`/notifications/${notificationId}/read`, { token, method: "PATCH" });
+  },
   checkoutPayment(token, registrationId, idempotencyKey, simulateResult) {
     return request("/payments/checkout", {
       token,

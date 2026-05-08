@@ -10,6 +10,7 @@ import AdminWorkshopParticipantsPage from "./pages/admin/AdminWorkshopParticipan
 import AdminDeletedWorkshopsPage from "./pages/admin/AdminDeletedWorkshopsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import StudentPage from "./pages/StudentPage";
+import StudentNotificationsPage from "./pages/student/StudentNotificationsPage";
 import StudentPaymentsPage from "./pages/student/StudentPaymentsPage";
 import StudentCheckinsPage from "./pages/student/StudentCheckinsPage";
 import StudentRegistrationsPage from "./pages/student/StudentRegistrationsPage";
@@ -135,6 +136,13 @@ export default function App() {
           element={protectedGuard(
             "STUDENT",
             <StudentRegistrationsPage token={token} registrations={myRegistrations} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/student/notifications"
+          element={protectedGuard(
+            "STUDENT",
+            <StudentNotificationsPage token={token} onToast={pushToast} />
           )}
         />
         <Route

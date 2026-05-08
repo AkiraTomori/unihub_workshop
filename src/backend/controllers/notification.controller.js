@@ -13,6 +13,19 @@ export class NotificationController {
     }
   }
 
+  static async markRead(req, res) {
+    try {
+      const { id } = req.params;
+      const result = await NotificationService.markNotificationAsRead(req.user.id, id);
+      return res.status(200).json({ data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to mark notification as read',
+      });
+    }
+  }
+
   static async getFailedNotificationsList(req, res) {
     try {
       const notifications = await NotificationService.getFailedNotificationsList();

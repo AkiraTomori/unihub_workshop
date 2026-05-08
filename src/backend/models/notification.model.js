@@ -4,9 +4,10 @@ export class Notification {
   static async listByUser(userId) {
     return db('notifications')
       .where({ user_id: userId })
+      .orderByRaw('CASE WHEN read_at IS NULL THEN 0 ELSE 1 END ASC')
       .orderBy('created_at', 'desc')
       .limit(50)
-      .select('id', 'channel', 'subject', 'content', 'status', 'created_at');
+      .select('id', 'channel', 'template', 'subject', 'content', 'recipient', 'status', 'read_at', 'created_at');
   }
 
   static async getFailedNotifications() {
@@ -23,6 +24,19 @@ export class Notification {
         status: newStatus,
         updated_at: db.fn.now(),
       });
+  }
+
+  static async markAsRead(notificationId, userId) {
+    const [updated] = await db('notifications')
+      .where({ id: notificationId, user_id: userId })
+      .whereNull('read_at')
+      .update({
+        read_at: db.fn.now(),
+        updated_at: db.fn.now(),
+      })
+      .returning(['id', 'read_at']);
+
+    return updated || null;
   }
 
   static async updateMultipleStatus(notificationIds, newStatus) {
