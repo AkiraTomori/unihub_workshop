@@ -23,6 +23,29 @@ export class Checkin {
     await trx('checkins').insert(checkinData);
   }
 
+  static async listByUser(userId, trx = db) {
+    return trx('checkins as c')
+      .join('registrations as r', 'c.registration_id', 'r.id')
+      .join('workshops as w', 'r.workshop_id', 'w.id')
+      .where('r.user_id', userId)
+      .select(
+        'c.id as checkin_id',
+        'c.registration_id',
+        'c.device_id',
+        'c.scanned_at',
+        'c.offline_sync_id',
+        'c.created_at',
+        'c.updated_at',
+        'r.workshop_id',
+        'r.status as registration_status',
+        'r.qr_code',
+        'w.title as workshop_title',
+        'w.start_time as workshop_start_time',
+        'w.room_id'
+      )
+      .orderBy('c.scanned_at', 'desc');
+  }
+
   static async getCheckinStats(workshopId = null) {
     let query = db('checkins as c')
       .join('registrations as r', 'c.registration_id', 'r.id');

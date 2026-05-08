@@ -6,7 +6,6 @@ import WorkshopFilter from "../../components/WorkshopFilter";
 import DocumentManager from "../../components/DocumentManager";
 import AdminCheckinStats from "../../components/AdminCheckinStats";
 import AdminCsvSyncManager from "../../components/AdminCsvSyncManager";
-import AdminNotificationReplay from "../../components/AdminNotificationReplay";
 import AdminAuditLogs from "../../components/AdminAuditLogs";
 
 export default function AdminPage({ workshops, token, onWorkshopsChanged, loading, loadError, hasLoaded, onToast }) {
@@ -284,9 +283,6 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
       </div>
       <Card>
         <AdminCheckinStats token={token} onToast={onToast} />
-      </Card>
-      <Card>
-        <AdminNotificationReplay token={token} onToast={onToast} />
       </Card>
       </div>
       )}

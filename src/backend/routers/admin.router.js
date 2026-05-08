@@ -48,6 +48,8 @@ router.get('/workshops/:workshopId/registrations', (req, res) => AdminController
 
 router.get('/checkins/stats', (req, res) => AdminController.getCheckinStats(req, res));
 
+router.get('/notifications', (req, res) => NotificationController.listAdmin(req, res));
+
 router.get('/notifications/failed', (req, res) => NotificationController.getFailedNotificationsList(req, res));
 
 router.post('/notifications/replay', (req, res) => NotificationController.replayFailedNotifications(req, res));

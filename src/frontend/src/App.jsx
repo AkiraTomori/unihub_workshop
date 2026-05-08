@@ -8,8 +8,14 @@ import AdminWorkshopCreatePage from "./pages/admin/AdminWorkshopCreatePage";
 import AdminWorkshopEditPage from "./pages/admin/AdminWorkshopEditPage";
 import AdminWorkshopParticipantsPage from "./pages/admin/AdminWorkshopParticipantsPage";
 import AdminDeletedWorkshopsPage from "./pages/admin/AdminDeletedWorkshopsPage";
+import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
+import AdminFailedNotificationsPage from "./pages/admin/AdminFailedNotificationsPage";
 import NotFoundPage from "./pages/NotFoundPage";
-import StudentPage from "./pages/StudentPage";
+import StudentPage from "./pages/student/StudentPage";
+import StudentNotificationsPage from "./pages/student/StudentNotificationsPage";
+import StudentPaymentsPage from "./pages/student/StudentPaymentsPage";
+import StudentCheckinsPage from "./pages/student/StudentCheckinsPage";
+import StudentRegistrationsPage from "./pages/student/StudentRegistrationsPage";
 import WorkshopDetailPage from "./pages/WorkshopDetailPage";
 import { useAuthSession } from "./features/auth/useAuthSession";
 import { useWorkshopData } from "./features/workshops/useWorkshopData";
@@ -128,6 +134,34 @@ export default function App() {
           )}
         />
         <Route
+          path="/student/registrations"
+          element={protectedGuard(
+            "STUDENT",
+            <StudentRegistrationsPage token={token} registrations={myRegistrations} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/student/notifications"
+          element={protectedGuard(
+            "STUDENT",
+            <StudentNotificationsPage token={token} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/student/payments"
+          element={protectedGuard(
+            "STUDENT",
+            <StudentPaymentsPage token={token} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/student/checkins"
+          element={protectedGuard(
+            "STUDENT",
+            <StudentCheckinsPage token={token} onToast={pushToast} />
+          )}
+        />
+        <Route
           path="/admin/workshops"
           element={protectedGuard(
             "ADMIN",
@@ -168,6 +202,20 @@ export default function App() {
           element={protectedGuard(
             "ADMIN",
             <AdminWorkshopParticipantsPage token={token} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/admin/notifications"
+          element={protectedGuard(
+            "ADMIN",
+            <AdminNotificationsPage token={token} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/admin/notifications/failed"
+          element={protectedGuard(
+            "ADMIN",
+            <AdminFailedNotificationsPage token={token} onToast={pushToast} />
           )}
         />
         <Route

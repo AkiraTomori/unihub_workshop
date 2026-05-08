@@ -4,7 +4,13 @@ import { LogOut, ShieldCheck, UserRound } from "lucide-react";
 export default function AppHeader({ role, roleLabel, fullName, onLogout }) {
   const links = [];
   if (role === "STUDENT") links.push({ to: "/student/workshops", label: "Student Actions" });
+  if (role === "STUDENT") links.push({ to: "/student/notifications", label: "My Notifications" });
+  if (role === "STUDENT") links.push({ to: "/student/registrations", label: "My Registrations" });
+  if (role === "STUDENT") links.push({ to: "/student/payments", label: "My Payments" });
+  if (role === "STUDENT") links.push({ to: "/student/checkins", label: "My Check-ins" });
   if (role === "ADMIN") links.push({ to: "/admin/workshops", label: "Admin Actions" });
+  if (role === "ADMIN") links.push({ to: "/admin/notifications", label: "Notifications", end: true });
+  if (role === "ADMIN") links.push({ to: "/admin/notifications/failed", label: "Failed Mail", end: true });
 
   return (
     <header className="mb-6 flex flex-col gap-3 rounded-xl bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-800 p-4 text-white md:flex-row md:items-center md:justify-between">
@@ -17,6 +23,7 @@ export default function AppHeader({ role, roleLabel, fullName, onLogout }) {
           <NavLink
             key={link.to}
             to={link.to}
+            end={link.end}
             className={({ isActive }) =>
               `rounded-lg px-3 py-1 text-sm font-medium ${isActive ? "bg-white text-blue-900" : "bg-blue-700/70 text-white"}`
             }

@@ -22,7 +22,7 @@ sequenceDiagram
     participant Outbox as Outbox Publisher
     participant Broker as RabbitMQ
     participant Worker as Notification Worker
-    participant Mail as SendGrid
+    participant Mail as SMTP
 
     Core->>DB: Save business transaction and outbox event
     Outbox->>DB: Read pending outbox_events rows

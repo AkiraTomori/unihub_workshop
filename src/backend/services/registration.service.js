@@ -2,6 +2,23 @@ import { randomUUID } from 'crypto';
 import db from '../config/db.js';
 import Registration from '../models/registration.model.js';
 
+function buildRegistrationEmail({ fullName, workshopTitle, workshopStartTime, registrationId, workshopSpeaker, workshopRoomName, qrCode }) {
+  const startText = workshopStartTime ? new Date(workshopStartTime).toLocaleString() : 'N/A';
+
+  return [
+    `Hello ${fullName || 'student'},`,
+    '',
+    `Your registration for "${workshopTitle}" has been confirmed.`,
+    `Workshop speaker: ${workshopSpeaker || 'TBA'}`,
+    `Workshop room: ${workshopRoomName || 'TBA'}`,
+    `Registration ID: ${registrationId}`,
+    `Workshop starts at: ${startText}`,
+    `QR Code: ${qrCode}`,
+    '',
+    'Please keep this email for check-in and verification.',
+  ].join('\n');
+}
+
 function generateQrCode() {
   return `UNI-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 }
@@ -36,6 +53,12 @@ export class RegistrationService {
       const qrCode = generateQrCode();
       const expiresAt = isPaidWorkshop ? trx.raw(`NOW() + INTERVAL '15 minutes'`) : null;
       const status = isPaidWorkshop ? 'PENDING_PAYMENT' : 'CONFIRMED';
+      const student = await trx('users').where({ id: userId }).select('email', 'full_name').first();
+      const room = workshop.room_id ? await Registration.findRoomById(workshop.room_id, trx) : null;
+
+      if (!student?.email) {
+        throw { status: 404, message: 'Student email not found' };
+      }
 
       await Registration.createRegistration(trx, {
         id: registrationId,
@@ -48,7 +71,30 @@ export class RegistrationService {
 
       if (!isPaidWorkshop) {
         await Registration.incrementWorkshopRegisteredCount(workshopId, trx);
-        await Registration.enqueueRegistrationSideEffects(trx, userId, registrationId, workshop.title);
+        const subject = `Registration confirmed: ${workshop.title}`;
+        const content = buildRegistrationEmail({
+          fullName: student.full_name,
+          workshopTitle: workshop.title,
+          workshopStartTime: workshop.start_time,
+          registrationId,
+          workshopSpeaker: workshop.speaker,
+          workshopRoomName: room?.name,
+          qrCode,
+        });
+
+        await Registration.enqueueRegistrationSideEffects(trx, {
+          userId,
+          recipient: student.email,
+          subject,
+          content,
+          registrationId,
+          workshopId,
+          workshopTitle: workshop.title,
+          workshopStartTime: workshop.start_time,
+          workshopSpeaker: workshop.speaker,
+          workshopRoomName: room?.name,
+          qrCode,
+        });
       }
 
       return {

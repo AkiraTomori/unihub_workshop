@@ -3,17 +3,56 @@ import { publishEvent } from '../config/rabbitmq.js';
 import { randomUUID } from 'crypto';
 
 export class NotificationService {
+  static async listAdminNotifications({ status = 'ALL' } = {}) {
+    const rows = await Notification.listAll({ status });
+
+    return rows.map((row) => ({
+      id: row.id,
+      user_id: row.user_id,
+      user_full_name: row.user_full_name,
+      user_email: row.user_email,
+      user_student_code: row.user_student_code,
+      channel: row.channel,
+      template: row.template,
+      title: row.subject,
+      message: row.content || '',
+      recipient: row.recipient,
+      status: row.status,
+      read_at: row.read_at,
+      is_read: Boolean(row.read_at),
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    }));
+  }
+
   static async listMyNotifications(userId) {
     const rows = await Notification.listByUser(userId);
 
     return rows.map((row) => ({
       id: row.id,
       channel: row.channel,
+      template: row.template,
       title: row.subject,
       message: row.content || '',
       status: row.status,
+      recipient: row.recipient,
+      read_at: row.read_at,
+      is_read: Boolean(row.read_at),
       created_at: row.created_at,
     }));
+  }
+
+  static async markNotificationAsRead(userId, notificationId) {
+    const updated = await Notification.markAsRead(notificationId, userId);
+
+    if (!updated) {
+      throw { status: 404, message: 'Notification not found' };
+    }
+
+    return {
+      id: updated.id,
+      read_at: updated.read_at,
+    };
   }
 
   static async getFailedNotificationsList() {

@@ -1,14 +1,11 @@
-import { useState } from "react";
 import { Card } from "./ui";
 
 const STATUS_OPTIONS = [
-  { value: "DRAFT", label: "DRAFT", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
-  { value: "PUBLISHED", label: "PUBLISHED", color: "bg-green-100 text-green-800 border-green-300" }
+  { value: "DRAFT", label: "DRAFT" },
+  { value: "PUBLISHED", label: "PUBLISHED" }
 ];
 
 export default function WorkshopFilter({ selectedStatuses, onStatusChange }) {
-  const [isOpen, setIsOpen] = useState(false);
-
   function toggleStatus(status) {
     if (selectedStatuses.includes(status)) {
       onStatusChange(selectedStatuses.filter(s => s !== status));
@@ -17,64 +14,37 @@ export default function WorkshopFilter({ selectedStatuses, onStatusChange }) {
     }
   }
 
-  const hasActiveFilters = selectedStatuses.length > 0 && selectedStatuses.length < STATUS_OPTIONS.length;
+  const activeCount = selectedStatuses.length;
 
   return (
     <Card>
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-blue-950">Filter</h3>
-            {hasActiveFilters && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
-                {selectedStatuses.length} active
-              </span>
-            )}
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-blue-950">Filter</h3>
+            <p className="text-sm text-blue-800">View workshops by status.</p>
           </div>
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="rounded-lg px-2 py-1 text-sm font-medium text-blue-900 hover:bg-blue-50"
-          >
-            {isOpen ? "−" : "+"}
-          </button>
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">
+            {activeCount} active
+          </span>
         </div>
 
-        {isOpen && (
-          <div className="space-y-2 border-t border-blue-200 pt-3">
-              <p className="text-xs font-medium text-blue-700 uppercase tracking-wide">Status (Active Workshops)</p>
-            <div className="flex flex-wrap gap-2">
-              {STATUS_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => toggleStatus(option.value)}
-                  className={`rounded-lg border px-3 py-1 text-xs font-semibold transition-all ${
-                    selectedStatuses.includes(option.value)
-                      ? option.color
-                      : "border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="border-t border-blue-200 pt-2">
-              <button
-                onClick={() => onStatusChange(STATUS_OPTIONS.map(o => o.value))}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-900"
-              >
-                Select All
-              </button>
-              {" • "}
-              <button
-                onClick={() => onStatusChange([])}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-900"
-              >
-                Clear All
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {STATUS_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => toggleStatus(option.value)}
+              className={`rounded-full px-3 py-1 text-sm font-semibold transition ${
+                selectedStatuses.includes(option.value)
+                  ? "bg-blue-900 text-white"
+                  : "bg-blue-50 text-blue-800 hover:bg-blue-100"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
     </Card>
   );

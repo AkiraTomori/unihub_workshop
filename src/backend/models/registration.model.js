@@ -9,6 +9,10 @@ export class Registration {
       .first();
   }
 
+  static async findRoomById(roomId, trx = db) {
+    return trx('rooms').where({ id: roomId }).first();
+  }
+
   static async findActiveRegistration(userId, workshopId, trx = db) {
     return trx('registrations')
       .where({ user_id: userId, workshop_id: workshopId })
@@ -85,25 +89,65 @@ export class Registration {
       .first();
   }
 
-  static async enqueueRegistrationSideEffects(trx, userId, registrationId, workshopTitle) {
+  static async enqueueRegistrationSideEffects(trx, {
+    userId,
+    recipient,
+    subject,
+    content,
+    registrationId,
+    workshopId,
+    workshopTitle,
+    workshopStartTime,
+    workshopSpeaker,
+    workshopRoomName,
+    qrCode,
+  }) {
+    const notificationId = randomUUID();
+    const occurredAt = new Date().toISOString();
+
     await trx('outbox_events').insert({
       id: randomUUID(),
       aggregate_id: registrationId,
-      event_type: 'registration.confirmed',
-      payload: JSON.stringify({ registrationId }),
+      event_type: 'NotificationRequested',
+      payload: {
+        event_id: randomUUID(),
+        event_type: 'NotificationRequested',
+        occurred_at: occurredAt,
+        aggregate_id: notificationId,
+        correlation_id: registrationId,
+        trace_id: `registration-${registrationId}`,
+        payload: {
+          notification_id: notificationId,
+          user_id: userId,
+          channel: 'EMAIL',
+          template: 'registration-confirmed',
+          subject,
+          recipient,
+          content,
+          registration_id: registrationId,
+          workshop_id: workshopId,
+          workshop_title: workshopTitle,
+          workshop_start_time: workshopStartTime || null,
+          workshop_speaker: workshopSpeaker || null,
+          workshop_room_name: workshopRoomName || null,
+          qr_code: qrCode,
+        },
+      },
       status: 'PENDING',
     });
 
     await trx('notifications').insert({
-      id: randomUUID(),
+      id: notificationId,
       user_id: userId,
-      channel: 'IN_APP',
-      template: 'registration_confirm',
-      subject: 'Registration Confirmed',
-      content: `Your registration is confirmed for ${workshopTitle}.`,
-      recipient: '',
+      channel: 'EMAIL',
+      template: 'registration-confirmed',
+      subject,
+      content,
+      recipient,
       status: 'PENDING',
     });
+
+    return { notificationId };
   }
 
   static async listByWorkshop(workshopId) {

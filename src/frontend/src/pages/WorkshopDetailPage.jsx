@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Card, Spinner } from "../components/ui";
+import { Badge, Card, Spinner } from "../components/ui";
 import { api } from "../services/api";
 
 export default function WorkshopDetailPage({ token, myRegistrations, onWorkshopsChanged, onToast }) {
@@ -83,6 +83,8 @@ export default function WorkshopDetailPage({ token, myRegistrations, onWorkshops
   }
 
   const soldOut = workshop.seats_left <= 0;
+  const summaryStatus = workshop.summary_status === "COMPLETED" || workshop.summary ? "COMPLETED" : workshop.summary_status || "PENDING";
+  const summaryTone = summaryStatus === "COMPLETED" ? "green" : summaryStatus === "FAILED" ? "red" : summaryStatus === "PROCESSING" ? "yellow" : "blue";
 
   return (
     <Card className="mx-auto max-w-3xl space-y-4">
@@ -116,6 +118,24 @@ export default function WorkshopDetailPage({ token, myRegistrations, onWorkshops
       ) : null}
 
       <p className="text-sm text-blue-900">{workshop.description || "Chưa có mô tả chi tiết."}</p>
+
+      <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-4 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-blue-950">AI Summary</h3>
+          <Badge tone={summaryTone}>{summaryStatus}</Badge>
+        </div>
+        {summaryStatus === "COMPLETED" && workshop.summary ? (
+          <p className="whitespace-pre-line text-sm leading-6 text-blue-900">{workshop.summary}</p>
+        ) : (
+          <p className="text-sm text-blue-800">
+            {summaryStatus === "PROCESSING"
+              ? "AI summary is still being generated."
+              : summaryStatus === "FAILED"
+              ? "AI summary generation failed. Please check the document later."
+              : "AI summary is not available yet."}
+          </p>
+        )}
+      </div>
 
       <button
         type="button"

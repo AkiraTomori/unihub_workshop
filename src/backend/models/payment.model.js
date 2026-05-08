@@ -4,6 +4,8 @@ export class Payment {
   static async findRegistrationForCheckout(userId, registrationId, trx = db) {
     return trx('registrations as r')
       .join('workshops as w', 'r.workshop_id', 'w.id')
+      .leftJoin('rooms as rm', 'w.room_id', 'rm.id')
+      .join('users as u', 'r.user_id', 'u.id')
       .where('r.id', registrationId)
       .where('r.user_id', userId)
       .select(
@@ -13,8 +15,13 @@ export class Payment {
         'r.status as registration_status',
         'r.qr_code',
         'w.title as workshop_title',
+        'w.start_time as workshop_start_time',
+        'w.speaker as workshop_speaker',
+        'rm.name as room_name',
         'w.price',
-        'w.registered_count'
+        'w.registered_count',
+        'u.email as user_email',
+        'u.full_name as user_full_name'
       )
       .first();
   }
@@ -32,6 +39,31 @@ export class Payment {
       .where({ id: paymentId })
       .select('id', 'registration_id', 'amount', 'provider', 'status', 'transaction_id', 'idempotency_key')
       .first();
+  }
+
+  static async listByUser(userId, trx = db) {
+    return trx('payments as p')
+      .join('registrations as r', 'p.registration_id', 'r.id')
+      .join('workshops as w', 'r.workshop_id', 'w.id')
+      .where('r.user_id', userId)
+      .select(
+        'p.id as payment_id',
+        'p.registration_id',
+        'p.amount',
+        'p.provider',
+        'p.transaction_id',
+        'p.idempotency_key',
+        'p.status',
+        'p.created_at',
+        'p.updated_at',
+        'r.workshop_id',
+        'r.status as registration_status',
+        'r.qr_code',
+        'w.title as workshop_title',
+        'w.start_time as workshop_start_time',
+        'w.room_id'
+      )
+      .orderBy('p.created_at', 'desc');
   }
 
   static async createPayment(trx, paymentData) {
