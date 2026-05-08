@@ -29,7 +29,7 @@ function getTimeUntilNextRun(nextRun) {
 }
 
 async function runCsvSync() {
-  const csvPath = process.env.CSV_FILE_PATH || './data/students.csv';
+  const csvPath = process.env.CSV_FILE_PATH || CsvSyncService.getLatestCsvStoragePath();
 
   try {
     console.log(`[CSV Sync Worker] Starting sync from ${csvPath}`);

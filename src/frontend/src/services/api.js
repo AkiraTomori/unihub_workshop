@@ -233,6 +233,12 @@ export const api = {
       formData: { workshopId }
     }).then(response => response?.data);
   },
+  uploadCsvSyncFile(token, file) {
+    return uploadFile('/admin/csv-sync/upload', {
+      token,
+      file,
+    }).then(response => response?.data);
+  },
   startDocumentSummary(token, workshopId) {
     return request(`/admin/documents/${workshopId}/summary`, { token, method: "PATCH" }).then(response => response?.data);
   },

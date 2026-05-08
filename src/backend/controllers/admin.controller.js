@@ -194,6 +194,28 @@ export class AdminController {
     }
   }
 
+  static async uploadCsvSyncFile(req, res) {
+    try {
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ status: 'VALIDATION_ERROR', message: 'CSV file is required' });
+      }
+
+      const result = await AdminService.uploadCsvSyncFile(file.buffer, file.originalname);
+      return res.status(200).json({
+        status: 'SUCCESS',
+        message: 'CSV file uploaded successfully',
+        data: result,
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to upload CSV file',
+      });
+    }
+  }
+
   static async getCsvSyncLogs(req, res) {
     try {
       const page = req.query.page ? parseInt(req.query.page) : 1;

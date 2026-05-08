@@ -4,3 +4,6 @@ node_modules/
 # ingore expo files
 .expo/
 .expo-shared/
+
+# Ignore downloaded CSV sync files stored by the backend worker/admin upload flow
+src/backend/data/csv-sync/*.csv

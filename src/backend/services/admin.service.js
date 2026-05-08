@@ -40,6 +40,10 @@ function ensureRoomCapacity(room, totalSeats) {
 }
 
 export class AdminService {
+  static async uploadCsvSyncFile(fileBuffer, originalFileName) {
+    return CsvSyncService.saveUploadedCsvFile(fileBuffer, originalFileName);
+  }
+
   static async createWorkshop(payload) {
     const roomId = payload.room_id || (await Admin.findFirstRoomId());
     if (!roomId) throw { status: 400, message: 'No room configured in database' };
@@ -323,9 +327,7 @@ export class AdminService {
   }
 
   static async triggerCsvSync() {
-    // Use demo CSV file for now
-    // In production, this would fetch from legacy FTP/storage
-    const csvPath = process.env.CSV_FILE_PATH || './data/students.csv';
+    const csvPath = process.env.CSV_FILE_PATH || CsvSyncService.getLatestCsvStoragePath();
     
     try {
       const result = await CsvSyncService.runSync(csvPath);

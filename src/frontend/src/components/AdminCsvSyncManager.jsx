@@ -6,8 +6,10 @@ export default function AdminCsvSyncManager({ token, onToast }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
     loadLogs();
@@ -36,6 +38,25 @@ export default function AdminCsvSyncManager({ token, onToast }) {
       onToast?.(err?.message || 'Failed to trigger CSV sync', 'error');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      onToast?.('Please choose a CSV file first', 'error');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const result = await api.uploadCsvSyncFile(token, selectedFile);
+      onToast?.(`CSV uploaded: ${result.fileName}`, 'success');
+      setSelectedFile(null);
+      await loadLogs();
+    } catch (err) {
+      onToast?.(err?.message || 'Failed to upload CSV file', 'error');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -79,23 +100,59 @@ export default function AdminCsvSyncManager({ token, onToast }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-blue-950">CSV Data Synchronization</h2>
-          <p className="text-sm text-blue-800">Import student data from legacy system nightly CSV export</p>
+          <p className="text-sm text-blue-800">Upload a CSV file once, then trigger manual sync now or let the worker process it later.</p>
         </div>
-        <button
-          type="button"
-          onClick={handleSync}
-          disabled={syncing}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white disabled:bg-blue-400"
-        >
-          {syncing ? (
-            <>
-              <Spinner />
-              Syncing...
-            </>
-          ) : (
-            '▶ Trigger Manual Sync'
-          )}
-        </button>
+      </div>
+
+      <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-4 space-y-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-blue-950">Upload CSV file</p>
+            <p className="text-xs text-blue-700">The uploaded file is saved as the latest sync file on the backend.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+              className="block max-w-full text-sm text-blue-900 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-800"
+            />
+            <button
+              type="button"
+              onClick={handleUpload}
+              disabled={uploading}
+              className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-4 py-2 text-sm font-medium text-blue-900 disabled:opacity-50"
+            >
+              {uploading ? (
+                <>
+                  <Spinner />
+                  Uploading...
+                </>
+              ) : (
+                'Upload CSV'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white disabled:bg-blue-400"
+            >
+              {syncing ? (
+                <>
+                  <Spinner />
+                  Syncing...
+                </>
+              ) : (
+                '▶ Trigger Manual Sync'
+              )}
+            </button>
+          </div>
+        </div>
+
+        <p className="text-xs text-blue-700">
+          Selected file: {selectedFile ? selectedFile.name : 'No file chosen yet'}
+        </p>
       </div>
 
       {loading ? (

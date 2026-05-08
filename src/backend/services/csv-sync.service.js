@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function resolveCsvFilePath(inputPath) {
-  const requestedPath = inputPath || './data/students.csv';
+  const requestedPath = inputPath || './data/csv-sync/latest.csv';
 
   const candidates = path.isAbsolute(requestedPath)
     ? [requestedPath]
@@ -18,6 +18,12 @@ function resolveCsvFilePath(inputPath) {
       path.resolve(process.cwd(), requestedPath),
       path.resolve(__dirname, '../../../', requestedPath),
       path.resolve(__dirname, '../../../', requestedPath.replace(/^\.\//, '')),
+      ...(requestedPath === './data/csv-sync/latest.csv'
+        ? [
+            path.resolve(process.cwd(), './data/students.csv'),
+            path.resolve(__dirname, '../../../data/students.csv'),
+          ]
+        : []),
     ];
 
   const resolvedPath = candidates.find((candidate) => fs.existsSync(candidate));
@@ -29,6 +35,10 @@ function resolveCsvFilePath(inputPath) {
   }
 
   return resolvedPath;
+}
+
+function getCsvSyncStoragePath(fileName = 'latest.csv') {
+  return path.resolve(__dirname, '../data/csv-sync', fileName);
 }
 
 /**
@@ -224,6 +234,30 @@ export class CsvSyncService {
 
       throw error;
     }
+  }
+
+  static getLatestCsvStoragePath() {
+    return getCsvSyncStoragePath('latest.csv');
+  }
+
+  static async saveUploadedCsvFile(fileBuffer, originalFileName) {
+    if (!fileBuffer) {
+      throw new Error('CSV file buffer is required');
+    }
+
+    if (!originalFileName || !originalFileName.toLowerCase().endsWith('.csv')) {
+      throw new Error('Only CSV files are allowed');
+    }
+
+    const storageDir = path.dirname(this.getLatestCsvStoragePath());
+    await fs.promises.mkdir(storageDir, { recursive: true });
+    await fs.promises.writeFile(this.getLatestCsvStoragePath(), fileBuffer);
+
+    return {
+      fileName: originalFileName,
+      storedPath: this.getLatestCsvStoragePath(),
+      size: fileBuffer.length,
+    };
   }
 
   /**
