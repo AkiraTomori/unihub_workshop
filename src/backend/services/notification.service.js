@@ -1,4 +1,6 @@
 import Notification from '../models/notification.model.js';
+import { publishEvent } from '../config/rabbitmq.js';
+import { randomUUID } from 'crypto';
 
 export class NotificationService {
   static async listMyNotifications(userId) {
@@ -46,15 +48,46 @@ export class NotificationService {
       };
     }
 
-    // Mark selected failed notifications as PENDING to retry
-    const notifIds = failedNotifications.map(n => n.id);
+    const replayableNotifications = failedNotifications.filter((notification) => notification.channel === 'EMAIL');
+    const skippedCount = failedNotifications.length - replayableNotifications.length;
+
+    if (replayableNotifications.length === 0) {
+      return {
+        replayed: 0,
+        failed: skippedCount,
+      };
+    }
+
+    // Mark selected email notifications as PENDING to retry
+    const notifIds = replayableNotifications.map(n => n.id);
     await Notification.updateMultipleStatus(notifIds, 'PENDING');
 
-    // In a real scenario, you would integrate with your messaging service here
-    // For now, we just mark them as pending for retry by the worker
+    // Publish each notification so the worker can resend via SMTP
+    await Promise.all(
+      replayableNotifications.map((notification) =>
+        publishEvent('notification.requested', {
+          event_id: randomUUID(),
+          event_type: 'NotificationRequested',
+          occurred_at: new Date().toISOString(),
+          aggregate_id: notification.id,
+          correlation_id: notification.id,
+          trace_id: `replay-${notification.id}`,
+          payload: {
+            notification_id: notification.id,
+            user_id: notification.user_id,
+            channel: notification.channel,
+            template: notification.template,
+            subject: notification.subject,
+            content: notification.content,
+            recipient: notification.recipient,
+          },
+        })
+      )
+    );
+
     return {
-      replayed: failedNotifications.length,
-      failed: 0,
+      replayed: replayableNotifications.length,
+      failed: skippedCount,
     };
   }
 }
