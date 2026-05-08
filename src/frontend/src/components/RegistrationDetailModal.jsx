@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import QRCode from 'react-qr-code';
 import { Badge, Spinner } from './ui';
 import { api } from '../services/api';
 
@@ -86,9 +87,16 @@ export default function RegistrationDetailModal({ registrationId, token, onClose
                       <Badge tone={getStatusColor(data.status)}>{data.status}</Badge>
                     </p>
                   </div>
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-xs text-blue-600 font-medium">QR Code</p>
-                    <p className="font-mono text-sm text-blue-900">{data.qr_code}</p>
+                  <div className="bg-blue-50 p-3 rounded-lg md:col-span-2">
+                    <p className="text-xs text-blue-600 font-medium mb-2">QR Code</p>
+                    {data.qr_code ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <QRCode value={data.qr_code} size={150} level="H" includeMargin={true} />
+                        <p className="font-mono text-xs text-blue-700 break-all text-center">{data.qr_code}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-blue-700 italic">QR code not available</p>
+                    )}
                   </div>
                   <div className="bg-blue-50 p-3 rounded-lg">
                     <p className="text-xs text-blue-600 font-medium">Expires At</p>
