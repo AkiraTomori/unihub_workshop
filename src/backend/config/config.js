@@ -45,6 +45,13 @@ export const config = {
     url: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
   },
 
+  // Redis
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: Number(process.env.REDIS_PORT || 6379),
+    password: process.env.REDIS_PASSWORD || null,
+  },
+
   // Supabase Storage
   storage: {
     url: process.env.SUPABASE_URL || '',
