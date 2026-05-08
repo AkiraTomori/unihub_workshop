@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Badge, Card, Spinner } from "../components/ui";
-import { api } from "../services/api";
+import { Badge, Card, Spinner } from "../../components/ui";
+import { api } from "../../services/api";
 
 export default function StudentPage({
   workshops,
@@ -150,10 +150,7 @@ export default function StudentPage({
               Workshop: <span className="font-semibold">{paymentContext.workshop.title}</span>
             </p>
             <p className="mt-1 text-xs text-blue-700">
-              Fee:{" "}
-              {paymentContext.workshop.fee === 0
-                ? "Free"
-                : `${paymentContext.workshop.fee.toLocaleString()} VND`}
+              Fee: {paymentContext.workshop.fee === 0 ? "Free" : `${paymentContext.workshop.fee.toLocaleString()} VND`}
             </p>
             <p className="mt-2 text-sm text-blue-800">
               Status: <span className="font-semibold">{paymentContext.paymentStatus}</span>
@@ -204,22 +201,13 @@ export default function StudentPage({
                 <p className="text-sm text-blue-800">Jump to your payments, check-ins, and registration history.</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link
-                  to="/student/registrations"
-                  className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50"
-                >
+                <Link to="/student/registrations" className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
                   My Registrations
                 </Link>
-                <Link
-                  to="/student/payments"
-                  className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50"
-                >
+                <Link to="/student/payments" className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
                   My Payments
                 </Link>
-                <Link
-                  to="/student/checkins"
-                  className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50"
-                >
+                <Link to="/student/checkins" className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
                   My Check-ins
                 </Link>
               </div>
@@ -284,10 +272,7 @@ export default function StudentPage({
                     <div className="flex min-w-[220px] flex-col justify-end text-right md:min-h-[140px]">
                       <p className="mb-2 text-sm font-semibold">{w.fee === 0 ? "Free" : `${w.fee.toLocaleString()} VND`}</p>
                       <div className="mt-auto flex items-center justify-end gap-2">
-                        <Link
-                          to={`/student/workshops/${w.id}`}
-                          className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50"
-                        >
+                        <Link to={`/student/workshops/${w.id}`} className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
                           Details
                         </Link>
                         <button

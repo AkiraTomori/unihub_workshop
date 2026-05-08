@@ -1,6 +1,19 @@
 import NotificationService from '../services/notification.service.js';
 
 export class NotificationController {
+  static async listAdmin(req, res) {
+    try {
+      const status = req.query?.status || 'ALL';
+      const rows = await NotificationService.listAdminNotifications({ status });
+      return res.status(200).json({ data: rows });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch admin notifications',
+      });
+    }
+  }
+
   static async listMine(req, res) {
     try {
       const rows = await NotificationService.listMyNotifications(req.user.id);

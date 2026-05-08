@@ -8,8 +8,10 @@ import AdminWorkshopCreatePage from "./pages/admin/AdminWorkshopCreatePage";
 import AdminWorkshopEditPage from "./pages/admin/AdminWorkshopEditPage";
 import AdminWorkshopParticipantsPage from "./pages/admin/AdminWorkshopParticipantsPage";
 import AdminDeletedWorkshopsPage from "./pages/admin/AdminDeletedWorkshopsPage";
+import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
+import AdminFailedNotificationsPage from "./pages/admin/AdminFailedNotificationsPage";
 import NotFoundPage from "./pages/NotFoundPage";
-import StudentPage from "./pages/StudentPage";
+import StudentPage from "./pages/student/StudentPage";
 import StudentNotificationsPage from "./pages/student/StudentNotificationsPage";
 import StudentPaymentsPage from "./pages/student/StudentPaymentsPage";
 import StudentCheckinsPage from "./pages/student/StudentCheckinsPage";
@@ -200,6 +202,20 @@ export default function App() {
           element={protectedGuard(
             "ADMIN",
             <AdminWorkshopParticipantsPage token={token} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/admin/notifications"
+          element={protectedGuard(
+            "ADMIN",
+            <AdminNotificationsPage token={token} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/admin/notifications/failed"
+          element={protectedGuard(
+            "ADMIN",
+            <AdminFailedNotificationsPage token={token} onToast={pushToast} />
           )}
         />
         <Route

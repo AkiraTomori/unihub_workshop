@@ -1,6 +1,35 @@
 import db from '../config/db.js';
 
 export class Notification {
+  static async listAll({ status = null, limit = 100 } = {}) {
+    const query = db('notifications as n')
+      .join('users as u', 'n.user_id', 'u.id')
+      .orderBy('n.created_at', 'desc')
+      .limit(limit)
+      .select(
+        'n.id',
+        'n.user_id',
+        'n.channel',
+        'n.template',
+        'n.subject',
+        'n.content',
+        'n.recipient',
+        'n.status',
+        'n.read_at',
+        'n.created_at',
+        'n.updated_at',
+        'u.full_name as user_full_name',
+        'u.email as user_email',
+        'u.student_code as user_student_code'
+      );
+
+    if (status && status !== 'ALL') {
+      query.where('n.status', status);
+    }
+
+    return query;
+  }
+
   static async listByUser(userId) {
     return db('notifications')
       .where({ user_id: userId })

@@ -259,6 +259,15 @@ export const api = {
     const response = await request('/admin/checkins/stats', { token });
     return response?.data || null;
   },
+  async getAdminNotifications(token, status = 'ALL') {
+    const params = new URLSearchParams();
+    if (status && status !== 'ALL') {
+      params.set('status', status);
+    }
+    const path = params.toString() ? `/admin/notifications?${params.toString()}` : '/admin/notifications';
+    const response = await request(path, { token });
+    return Array.isArray(response?.data) ? response.data : [];
+  },
   async triggerCsvSync(token) {
     const response = await request('/admin/csv-sync/run', { token, method: 'POST', body: {} });
     return response;
