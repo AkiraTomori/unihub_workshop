@@ -145,14 +145,14 @@ export default function StudentNotificationsPage({ token, onToast }) {
                       <Badge tone={getChannelTone(notification.channel)}>{notification.channel}</Badge>
                       <Badge tone={isUnread ? "yellow" : "green"}>{isUnread ? "Unread" : "Read"}</Badge>
                     </div>
-                    <p className="text-sm text-blue-800 whitespace-pre-line">{notification.message}</p>
+                    {/* <p className="text-sm text-blue-800 whitespace-pre-line">{notification.message}</p> */}
                     <p className="text-xs text-blue-700">Sent {formatDate(notification.created_at)}</p>
                     {notification.read_at ? (
                       <p className="text-xs text-blue-700">Read {formatDate(notification.read_at)}</p>
                     ) : null}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-blue-900 shadow-sm">View details</span>
+                    {/* <span className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-blue-900 shadow-sm">View details</span> */}
                     {isUnread ? (
                       <button
                         type="button"

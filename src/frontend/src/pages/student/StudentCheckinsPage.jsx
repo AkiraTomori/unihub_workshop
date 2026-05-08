@@ -80,7 +80,7 @@ export default function StudentCheckinsPage({ token, onToast }) {
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="space-y-1">
                 <p className="font-semibold text-blue-950">{checkin.workshop_title || "Workshop"}</p>
-                <p className="text-sm text-blue-800">Registration {checkin.registration_id}</p>
+                {/* <p className="text-sm text-blue-800">Registration {checkin.registration_id}</p> */}
                 <p className="text-xs text-blue-700">Scanned at {formatDate(checkin.scanned_at)}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2 md:justify-end">

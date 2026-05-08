@@ -94,7 +94,7 @@ export default function StudentPaymentsPage({ token, onToast }) {
                 <div className="min-w-0 space-y-1">
                   <p className="font-semibold text-blue-950">{payment.workshop_title || "Workshop"}</p>
                   <p className="text-sm text-blue-800">
-                    {payment.provider} • Registration {payment.registration_id}
+                    {payment.provider} - {payment.method}
                   </p>
                   <p className="text-xs text-blue-700">{formatDate(payment.created_at)}</p>
                 </div>
