@@ -35,9 +35,9 @@ router.post('/logout',
   (req, res) => AuthController.logout(req, res)
 );
 
-router.post('/change-password', 
-  verifyToken, 
-  (req, res) => AuthController.changePassword(req, res)
-);
+// router.post('/change-password', 
+//   verifyToken, 
+//   (req, res) => AuthController.changePassword(req, res)
+// );
 
 export default router;

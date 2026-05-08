@@ -148,47 +148,47 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /auth/change-password
-   * Change user password
-   */
-  static async changePassword(req, res) {
-    try {
-      const userId = req.user.id;
-      const { oldPassword, newPassword } = req.body;
+  // /**
+  //  * POST /auth/change-password
+  //  * Change user password
+  //  */
+  // static async changePassword(req, res) {
+  //   try {
+  //     const userId = req.user.id;
+  //     const { oldPassword, newPassword } = req.body;
 
-      // Validate input
-      if (!oldPassword || !newPassword) {
-        return res.status(400).json({
-          status: 'VALIDATION_ERROR',
-          message: 'Old password and new password are required',
-        });
-      }
+  //     // Validate input
+  //     if (!oldPassword || !newPassword) {
+  //       return res.status(400).json({
+  //         status: 'VALIDATION_ERROR',
+  //         message: 'Old password and new password are required',
+  //       });
+  //     }
 
-      if (newPassword.length < 6) {
-        return res.status(400).json({
-          status: 'VALIDATION_ERROR',
-          message: 'New password must be at least 6 characters',
-        });
-      }
+  //     if (newPassword.length < 6) {
+  //       return res.status(400).json({
+  //         status: 'VALIDATION_ERROR',
+  //         message: 'New password must be at least 6 characters',
+  //       });
+  //     }
 
-      const result = await AuthService.changePassword(userId, oldPassword, newPassword);
+  //     const result = await AuthService.changePassword(userId, oldPassword, newPassword);
 
-      // Clear refresh token cookie (force re-login)
-      res.clearCookie('refreshToken');
+  //     // Clear refresh token cookie (force re-login)
+  //     res.clearCookie('refreshToken');
 
-      return res.status(200).json({
-        status: 'SUCCESS',
-        message: result.message,
-      });
-    } catch (error) {
-      return res.status(error.status || 500).json({
-        status: 'ERROR',
-        message: error.message,
-        code: error.code,
-      });
-    }
-  }
+  //     return res.status(200).json({
+  //       status: 'SUCCESS',
+  //       message: result.message,
+  //     });
+  //   } catch (error) {
+  //     return res.status(error.status || 500).json({
+  //       status: 'ERROR',
+  //       message: error.message,
+  //       code: error.code,
+  //     });
+  //   }
+  // }
 }
 
 export default AuthController;
