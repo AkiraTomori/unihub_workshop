@@ -267,6 +267,15 @@ export const api = {
     const response = await request(`/admin/csv-sync-logs?page=${page}&limit=${limit}`, { token });
     return response?.data || null;
   },
+  async getAuditLogs(token, page = 1, limit = 20, entityType = '', action = '') {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    if (entityType) params.set('entityType', entityType);
+    if (action) params.set('action', action);
+    const response = await request(`/admin/audit-logs?${params.toString()}`, { token });
+    return response?.data || null;
+  },
   syncCheckins(token, items) {
     return request("/checkins/sync", { token, method: "POST", body: { items } });
   },

@@ -26,6 +26,7 @@ router.get('/csv-sync/latest', (req, res) => AdminController.csvLatest(req, res)
 router.post('/csv-sync/upload', upload.single('file'), (req, res) => AdminController.uploadCsvSyncFile(req, res));
 router.post('/csv-sync/run', (req, res) => AdminController.triggerCsvSync(req, res));
 router.get('/csv-sync-logs', (req, res) => AdminController.getCsvSyncLogs(req, res));
+router.get('/audit-logs', (req, res) => AdminController.getAuditLogs(req, res));
 router.get('/workshops/:workshopId/registrations', (req, res) => AdminController.getWorkshopRegistrations(req, res));
 router.get('/checkins/stats', (req, res) => AdminController.getCheckinStats(req, res));
 router.get('/notifications/failed', (req, res) => NotificationController.getFailedNotificationsList(req, res));

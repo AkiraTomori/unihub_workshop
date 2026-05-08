@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import Workshop from '../models/workshop.model.js';
 import Admin from '../models/admin.model.js';
 import Checkin from '../models/checkin.model.js';
@@ -40,11 +41,20 @@ function ensureRoomCapacity(room, totalSeats) {
 }
 
 export class AdminService {
-  static async uploadCsvSyncFile(fileBuffer, originalFileName) {
-    return CsvSyncService.saveUploadedCsvFile(fileBuffer, originalFileName);
+  static async uploadCsvSyncFile(actorId, fileBuffer, originalFileName) {
+    const result = await CsvSyncService.saveUploadedCsvFile(fileBuffer, originalFileName);
+    await Admin.insertAuditLog({
+      actorId,
+      entityId: randomUUID(),
+      action: 'UPLOAD_CSV_SYNC_FILE',
+      entityType: 'csv_sync_logs',
+      oldPayload: null,
+      newPayload: result,
+    });
+    return result;
   }
 
-  static async createWorkshop(payload) {
+  static async createWorkshop(actorId, payload) {
     const roomId = payload.room_id || (await Admin.findFirstRoomId());
     if (!roomId) throw { status: 400, message: 'No room configured in database' };
     const room = await Admin.getRoomById(roomId);
@@ -64,6 +74,21 @@ export class AdminService {
       capacity: Number(payload.totalSeats || 60),
       price: Number(payload.fee || 0),
       status: 'DRAFT',
+    });
+
+    await Admin.insertAuditLog({
+      actorId,
+      entityId: workshop.id,
+      action: 'CREATE_WORKSHOP',
+      entityType: 'workshops',
+      oldPayload: null,
+      newPayload: {
+        title: workshop.title,
+        room_id: roomId,
+        totalSeats: Number(payload.totalSeats || 60),
+        fee: Number(payload.fee || 0),
+        status: 'DRAFT',
+      },
     });
 
     return { id: workshop.id, title: workshop.title, status: workshop.status };
@@ -122,7 +147,7 @@ export class AdminService {
     };
   }
 
-  static async updateWorkshop(workshopId, payload) {
+  static async updateWorkshop(actorId, workshopId, payload) {
     const current = await Workshop.findAnyById(workshopId);
     if (!current) throw { status: 404, message: 'Workshop not found' };
 
@@ -144,6 +169,27 @@ export class AdminService {
     });
 
     if (!updated) throw { status: 404, message: 'Workshop not found' };
+
+    await Admin.insertAuditLog({
+      actorId,
+      entityId: workshopId,
+      action: 'UPDATE_WORKSHOP',
+      entityType: 'workshops',
+      oldPayload: {
+        title: current.title,
+        room_id: current.room_id,
+        totalSeats: Number(current.capacity || 0),
+        fee: Number(current.price || 0),
+        status: current.status,
+      },
+      newPayload: {
+        title: updated.title,
+        room_id: updated.room_id,
+        totalSeats: Number(updated.capacity || 0),
+        fee: Number(updated.price || 0),
+        status: updated.status,
+      },
+    });
     return updated;
   }
 
@@ -152,11 +198,13 @@ export class AdminService {
     if (!workshop) throw { status: 404, message: 'Workshop not found' };
 
     await Workshop.softDelete(workshopId);
-    await Admin.insertWorkshopAuditLog({
+    await Admin.insertAuditLog({
       actorId,
-      workshopId,
-      oldStatus: workshop.status,
-      newStatus: 'CANCELLED',
+      entityId: workshopId,
+      action: 'CANCEL_WORKSHOP',
+      entityType: 'workshops',
+      oldPayload: { status: workshop.status, deleted_at: workshop.deleted_at || null },
+      newPayload: { status: 'CANCELLED', deleted_at: new Date().toISOString() },
     });
 
     return { id: workshopId, status: 'CANCELLED' };
@@ -182,17 +230,19 @@ export class AdminService {
     }
 
     const restored = await Workshop.restore(workshopId);
-    await Admin.insertWorkshopAuditLog({
+    await Admin.insertAuditLog({
       actorId,
-      workshopId,
-      oldStatus: workshop.status,
-      newStatus: restored?.status || 'DRAFT',
+      entityId: workshopId,
+      action: 'RESTORE_WORKSHOP',
+      entityType: 'workshops',
+      oldPayload: { status: workshop.status, deleted_at: workshop.deleted_at },
+      newPayload: { status: restored?.status || 'DRAFT', deleted_at: null },
     });
 
     return restored;
   }
 
-  static async uploadDocument(workshopId, fileBuffer, originalFileName) {
+  static async uploadDocument(actorId, workshopId, fileBuffer, originalFileName) {
     const workshop = await Workshop.findById(workshopId);
     if (!workshop) throw { status: 404, message: 'Workshop not found' };
 
@@ -220,6 +270,20 @@ export class AdminService {
 
       // Store in database
       const documentId = await Admin.upsertDocumentWithUrl(workshopId, uploadResult.url);
+
+      await Admin.insertAuditLog({
+        actorId,
+        entityId: documentId,
+        action: 'UPLOAD_DOCUMENT',
+        entityType: 'documents',
+        oldPayload: null,
+        newPayload: {
+          workshopId,
+          pdfUrl: uploadResult.url,
+          fileName: originalFileName,
+          processStatus: 'PENDING',
+        },
+      });
 
       return {
         status: 'SUCCESS',
@@ -253,7 +317,7 @@ export class AdminService {
     };
   }
 
-  static async startDocumentSummary(workshopId) {
+  static async startDocumentSummary(actorId, workshopId) {
     const workshop = await Workshop.findById(workshopId);
     if (!workshop) throw { status: 404, message: 'Workshop not found' };
 
@@ -266,6 +330,15 @@ export class AdminService {
         documentId: document.id,
         pdfUrl: document.pdf_url,
         createdAt: new Date().toISOString(),
+      });
+
+      await Admin.insertAuditLog({
+        actorId,
+        entityId: document.id,
+        action: 'START_DOCUMENT_SUMMARY',
+        entityType: 'documents',
+        oldPayload: { processStatus: document.process_status },
+        newPayload: { processStatus: 'PENDING' },
       });
 
       console.log(`[AdminService] Published DocumentUploaded event for document ${document.id}`);
@@ -328,11 +401,19 @@ export class AdminService {
     return await Checkin.getCheckinStats();
   }
 
-  static async triggerCsvSync() {
+  static async triggerCsvSync(actorId) {
     const csvPath = process.env.CSV_FILE_PATH || CsvSyncService.getLatestCsvStoragePath();
     
     try {
       const result = await CsvSyncService.runSync(csvPath);
+      await Admin.insertAuditLog({
+        actorId,
+        entityId: result?.data?.logId || randomUUID(),
+        action: 'TRIGGER_CSV_SYNC',
+        entityType: 'csv_sync_logs',
+        oldPayload: null,
+        newPayload: result,
+      });
       return result;
     } catch (error) {
       return {
@@ -349,6 +430,10 @@ export class AdminService {
     } catch (error) {
       throw { status: 500, message: error.message || 'Failed to fetch CSV sync logs' };
     }
+  }
+
+  static async getAuditLogs(query = {}) {
+    return Admin.getAuditLogs(query);
   }
 }
 

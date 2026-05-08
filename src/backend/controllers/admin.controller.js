@@ -21,7 +21,7 @@ export class AdminController {
 
   static async createWorkshop(req, res) {
     try {
-      const result = await AdminService.createWorkshop(req.body);
+      const result = await AdminService.createWorkshop(req.user.id, req.body);
       return res.status(201).json({ status: 'SUCCESS', message: 'Workshop created successfully', data: result });
     } catch (error) {
       return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to create workshop' });
@@ -30,7 +30,7 @@ export class AdminController {
 
   static async updateWorkshop(req, res) {
     try {
-      const result = await AdminService.updateWorkshop(req.params.id, req.body);
+      const result = await AdminService.updateWorkshop(req.user.id, req.params.id, req.body);
       return res.status(200).json({ status: 'SUCCESS', message: 'Workshop updated successfully', data: result });
     } catch (error) {
       return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to update workshop' });
@@ -89,7 +89,7 @@ export class AdminController {
         return res.status(400).json({ status: 'VALIDATION_ERROR', message: 'File is required' });
       }
 
-      const result = await AdminService.uploadDocument(workshopId, file.buffer, file.originalname);
+      const result = await AdminService.uploadDocument(req.user.id, workshopId, file.buffer, file.originalname);
       return res.status(200).json(result);
     } catch (error) {
       return res.status(error.status || 500).json({
@@ -130,7 +130,7 @@ export class AdminController {
         return res.status(400).json({ status: 'VALIDATION_ERROR', message: 'workshopId is required' });
       }
 
-      const result = await AdminService.startDocumentSummary(workshopId);
+      const result = await AdminService.startDocumentSummary(req.user.id, workshopId);
       return res.status(200).json({ status: 'SUCCESS', message: 'Document summary started successfully', data: result });
     } catch (error) {
       return res.status(error.status || 500).json({
@@ -184,7 +184,7 @@ export class AdminController {
 
   static async triggerCsvSync(req, res) {
     try {
-      const result = await AdminService.triggerCsvSync();
+      const result = await AdminService.triggerCsvSync(req.user.id);
       return res.status(200).json(result);
     } catch (error) {
       return res.status(error.status || 500).json({
@@ -202,7 +202,7 @@ export class AdminController {
         return res.status(400).json({ status: 'VALIDATION_ERROR', message: 'CSV file is required' });
       }
 
-      const result = await AdminService.uploadCsvSyncFile(file.buffer, file.originalname);
+      const result = await AdminService.uploadCsvSyncFile(req.user.id, file.buffer, file.originalname);
       return res.status(200).json({
         status: 'SUCCESS',
         message: 'CSV file uploaded successfully',
@@ -226,6 +226,22 @@ export class AdminController {
       return res.status(error.status || 500).json({
         status: 'ERROR',
         message: error.message || 'Failed to fetch CSV sync logs',
+      });
+    }
+  }
+
+  static async getAuditLogs(req, res) {
+    try {
+      const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+      const entityType = req.query.entityType || null;
+      const action = req.query.action || null;
+      const result = await AdminService.getAuditLogs({ page, limit, entityType, action });
+      return res.status(200).json({ status: 'SUCCESS', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch audit logs',
       });
     }
   }
