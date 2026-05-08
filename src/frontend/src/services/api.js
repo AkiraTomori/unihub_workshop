@@ -284,6 +284,24 @@ export const api = {
     const response = await request(`/payments/${paymentId}`, { token });
     return response?.data || null;
   },
+  async getMyPayments(token) {
+    try {
+      const response = await request('/payments/me', { token });
+      return Array.isArray(response?.data) ? response.data : [];
+    } catch (error) {
+      if (error.status === 404) return [];
+      throw error;
+    }
+  },
+  async getMyCheckins(token) {
+    try {
+      const response = await request('/checkins/me', { token });
+      return Array.isArray(response?.data) ? response.data : [];
+    } catch (error) {
+      if (error.status === 404) return [];
+      throw error;
+    }
+  },
   async getFailedNotifications(token) {
     const response = await request('/admin/notifications/failed', { token });
     return response?.data || [];

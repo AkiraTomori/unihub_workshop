@@ -4,6 +4,9 @@ import { LogOut, ShieldCheck, UserRound } from "lucide-react";
 export default function AppHeader({ role, roleLabel, fullName, onLogout }) {
   const links = [];
   if (role === "STUDENT") links.push({ to: "/student/workshops", label: "Student Actions" });
+  if (role === "STUDENT") links.push({ to: "/student/registrations", label: "My Registrations" });
+  if (role === "STUDENT") links.push({ to: "/student/payments", label: "My Payments" });
+  if (role === "STUDENT") links.push({ to: "/student/checkins", label: "My Check-ins" });
   if (role === "ADMIN") links.push({ to: "/admin/workshops", label: "Admin Actions" });
 
   return (

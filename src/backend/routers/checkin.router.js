@@ -8,4 +8,6 @@ router.post('/scan', verifyToken, requireRole(['CHECKER', 'ADMIN']), (req, res) 
 
 router.post('/sync', verifyToken, requireRole(['CHECKER', 'ADMIN']), (req, res) => CheckinController.sync(req, res));
 
+router.get('/me', verifyToken, (req, res) => CheckinController.listMine(req, res));
+
 export default router;

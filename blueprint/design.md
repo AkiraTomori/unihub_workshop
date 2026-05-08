@@ -28,7 +28,7 @@ flowchart LR
     legacy["Legacy System<br/>(Student Management)"]
     payment["Payment Gateway<br/>(VNPay/MoMo)"]
     ai["Vertex AI<br/>(LLM Model)"]
-    email["Email Service<br/>(SendGrid)"]
+    email["Email Service<br/>(SMTP)"]
 
     %% Actor to System
     student -->|"Browse, register, present QR tickets"| system

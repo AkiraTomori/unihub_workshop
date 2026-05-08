@@ -10,6 +10,9 @@ import AdminWorkshopParticipantsPage from "./pages/admin/AdminWorkshopParticipan
 import AdminDeletedWorkshopsPage from "./pages/admin/AdminDeletedWorkshopsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import StudentPage from "./pages/StudentPage";
+import StudentPaymentsPage from "./pages/student/StudentPaymentsPage";
+import StudentCheckinsPage from "./pages/student/StudentCheckinsPage";
+import StudentRegistrationsPage from "./pages/student/StudentRegistrationsPage";
 import WorkshopDetailPage from "./pages/WorkshopDetailPage";
 import { useAuthSession } from "./features/auth/useAuthSession";
 import { useWorkshopData } from "./features/workshops/useWorkshopData";
@@ -125,6 +128,27 @@ export default function App() {
               onWorkshopsChanged={reloadWorkshops}
               onToast={pushToast}
             />
+          )}
+        />
+        <Route
+          path="/student/registrations"
+          element={protectedGuard(
+            "STUDENT",
+            <StudentRegistrationsPage token={token} registrations={myRegistrations} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/student/payments"
+          element={protectedGuard(
+            "STUDENT",
+            <StudentPaymentsPage token={token} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/student/checkins"
+          element={protectedGuard(
+            "STUDENT",
+            <StudentCheckinsPage token={token} onToast={pushToast} />
           )}
         />
         <Route

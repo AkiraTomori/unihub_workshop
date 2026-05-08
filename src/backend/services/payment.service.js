@@ -82,6 +82,10 @@ export class PaymentService {
       idempotency_key: payment.idempotency_key,
     };
   }
+
+  static async listMyPayments(userId) {
+    return Payment.listByUser(userId);
+  }
 }
 
 export default PaymentService;

@@ -34,6 +34,31 @@ export class Payment {
       .first();
   }
 
+  static async listByUser(userId, trx = db) {
+    return trx('payments as p')
+      .join('registrations as r', 'p.registration_id', 'r.id')
+      .join('workshops as w', 'r.workshop_id', 'w.id')
+      .where('r.user_id', userId)
+      .select(
+        'p.id as payment_id',
+        'p.registration_id',
+        'p.amount',
+        'p.provider',
+        'p.transaction_id',
+        'p.idempotency_key',
+        'p.status',
+        'p.created_at',
+        'p.updated_at',
+        'r.workshop_id',
+        'r.status as registration_status',
+        'r.qr_code',
+        'w.title as workshop_title',
+        'w.start_time as workshop_start_time',
+        'w.room_id'
+      )
+      .orderBy('p.created_at', 'desc');
+  }
+
   static async createPayment(trx, paymentData) {
     const [created] = await trx('payments')
       .insert(paymentData)

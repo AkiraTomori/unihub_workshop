@@ -39,6 +39,18 @@ export class PaymentController {
       });
     }
   }
+
+  static async listMine(req, res) {
+    try {
+      const result = await PaymentService.listMyPayments(req.user.id);
+      return res.status(200).json({ data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch payments',
+      });
+    }
+  }
 }
 
 export default PaymentController;

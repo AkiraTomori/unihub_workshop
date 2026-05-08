@@ -68,6 +68,10 @@ export class CheckinService {
 
     return results;
   }
+
+  static async listMyCheckins(userId) {
+    return Checkin.listByUser(userId);
+  }
 }
 
 export default CheckinService;
