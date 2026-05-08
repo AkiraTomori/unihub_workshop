@@ -3,6 +3,17 @@ import { config } from '../config/config.js';
 
 let transporter = null;
 
+function resolveFromAddress() {
+  const configuredFrom = config.smtp.from?.trim();
+  const user = config.smtp.user?.trim();
+
+  if (configuredFrom && !configuredFrom.includes('your-email@gmail.com')) {
+    return configuredFrom;
+  }
+
+  return user;
+}
+
 function getTransporter() {
   if (transporter) {
     return transporter;
@@ -26,15 +37,18 @@ function getTransporter() {
 }
 
 export class MailerService {
-  static async sendEmail({ to, subject, text, html }) {
+  static async sendEmail({ to, subject, text, html, attachments = [], cc = [], bcc = [] }) {
     const mailTransporter = getTransporter();
 
     return mailTransporter.sendMail({
-      from: config.smtp.from || config.smtp.user,
+      from: resolveFromAddress(),
       to,
+      ...(cc.length ? { cc } : {}),
+      ...(bcc.length ? { bcc } : {}),
       subject,
       text: text || '',
       html: html || text || '',
+      ...(attachments.length ? { attachments } : {}),
     });
   }
 }

@@ -3,6 +3,23 @@ import db from '../config/db.js';
 import Payment from '../models/payment.model.js';
 import Registration from '../models/registration.model.js';
 
+function buildRegistrationEmail({ fullName, workshopTitle, workshopStartTime, registrationId, workshopSpeaker, workshopRoomName, qrCode }) {
+  const startText = workshopStartTime ? new Date(workshopStartTime).toLocaleString() : 'N/A';
+
+  return [
+    `Hello ${fullName || 'student'},`,
+    '',
+    `Your payment for "${workshopTitle}" was successful and your registration is confirmed.`,
+    `Workshop speaker: ${workshopSpeaker || 'TBA'}`,
+    `Workshop room: ${workshopRoomName || 'TBA'}`,
+    `Registration ID: ${registrationId}`,
+    `Workshop starts at: ${startText}`,
+    `QR Code: ${qrCode}`,
+    '',
+    'Please keep this email for check-in and verification.',
+  ].join('\n');
+}
+
 export class PaymentService {
   static async checkout({ userId, registrationId, idempotencyKey, simulateResult = 'success' }) {
     return db.transaction(async (trx) => {
@@ -49,12 +66,30 @@ export class PaymentService {
       if (registration.registration_status !== 'CONFIRMED') {
         await Payment.confirmRegistration(trx, registration.id);
         await Payment.incrementWorkshopRegisteredCount(trx, registration.workshop_id);
-        await Registration.enqueueRegistrationSideEffects(
-          trx,
-          registration.user_id,
-          registration.id,
-          registration.workshop_title
-        );
+        const subject = `Registration confirmed: ${registration.workshop_title}`;
+        const content = buildRegistrationEmail({
+          fullName: registration.user_full_name,
+          workshopTitle: registration.workshop_title,
+          workshopStartTime: registration.workshop_start_time,
+          registrationId: registration.id,
+          workshopSpeaker: registration.workshop_speaker,
+          workshopRoomName: registration.room_name,
+          qrCode: registration.qr_code,
+        });
+
+        await Registration.enqueueRegistrationSideEffects(trx, {
+          userId: registration.user_id,
+          recipient: registration.user_email,
+          subject,
+          content,
+          registrationId: registration.id,
+          workshopId: registration.workshop_id,
+          workshopTitle: registration.workshop_title,
+          workshopStartTime: registration.workshop_start_time,
+          workshopSpeaker: registration.workshop_speaker,
+          workshopRoomName: registration.room_name,
+          qrCode: registration.qr_code,
+        });
       }
 
       return {

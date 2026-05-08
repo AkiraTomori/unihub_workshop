@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import QRCode from "react-qr-code";
 import { Badge, Card, Spinner } from "../../components/ui";
 import { api } from "../../services/api";
 
@@ -18,11 +19,18 @@ function getChannelTone(channel) {
   return map[channel] || "slate";
 }
 
+function extractQrCode(message) {
+  if (!message) return "";
+  const match = String(message).match(/QR Code:\s*(.+)/i);
+  return match?.[1]?.trim() || "";
+}
+
 export default function StudentNotificationsPage({ token, onToast }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [readBusyId, setReadBusyId] = useState("");
+  const [selectedNotification, setSelectedNotification] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -75,6 +83,14 @@ export default function StudentNotificationsPage({ token, onToast }) {
     }
   }
 
+  function openDetails(notification) {
+    setSelectedNotification(notification);
+  }
+
+  function closeDetails() {
+    setSelectedNotification(null);
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -111,6 +127,15 @@ export default function StudentNotificationsPage({ token, onToast }) {
             return (
               <div
                 key={notification.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => openDetails(notification)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openDetails(notification);
+                  }
+                }}
                 className={`rounded-xl border p-4 transition ${isUnread ? "border-indigo-200 bg-indigo-50/40" : "border-blue-100 bg-blue-50/20"}`}
               >
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -127,10 +152,14 @@ export default function StudentNotificationsPage({ token, onToast }) {
                     ) : null}
                   </div>
                   <div className="flex items-center gap-2">
+                    <span className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-blue-900 shadow-sm">View details</span>
                     {isUnread ? (
                       <button
                         type="button"
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          markAsRead(notification.id);
+                        }}
                         disabled={readBusyId === notification.id}
                         className="rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
@@ -144,6 +173,99 @@ export default function StudentNotificationsPage({ token, onToast }) {
           })}
         </div>
       </Card>
+
+      {selectedNotification ? (
+        (() => {
+          const qrCodeValue = extractQrCode(selectedNotification.message);
+
+          return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl shadow-slate-900/30">
+            <div className="flex items-start justify-between gap-4 border-b border-blue-100 bg-blue-50 px-5 py-4">
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-blue-950">Notification Details</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone={getChannelTone(selectedNotification.channel)}>{selectedNotification.channel}</Badge>
+                  <Badge tone={selectedNotification.read_at ? "green" : "yellow"}>
+                    {selectedNotification.read_at ? "Read" : "Unread"}
+                  </Badge>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeDetails}
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-blue-900 hover:bg-white"
+              >
+              </button>
+            </div>
+
+            <div className="max-h-[calc(85vh-84px)] overflow-y-auto p-5">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-blue-700">Subject</p>
+                  <p className="text-lg font-bold text-blue-950">{selectedNotification.title}</p>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-sm text-blue-900">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Recipient</p>
+                    <p className="break-all">{selectedNotification.recipient || "-"}</p>
+                  </div>
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-sm text-blue-900">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Template</p>
+                    <p>{selectedNotification.template || "-"}</p>
+                  </div>
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-sm text-blue-900">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Sent</p>
+                    <p>{formatDate(selectedNotification.created_at)}</p>
+                  </div>
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-sm text-blue-900">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Read at</p>
+                    <p>{formatDate(selectedNotification.read_at)}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4">
+                  <p className="mb-2 text-sm font-semibold text-blue-700">Email content</p>
+                  <pre className="whitespace-pre-wrap break-words text-sm leading-6 text-blue-950">{selectedNotification.message}</pre>
+                </div>
+
+                {qrCodeValue ? (
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4">
+                    <p className="mb-2 text-sm font-semibold text-blue-700">QR Ticket</p>
+                    <div className="flex flex-col items-center gap-3 rounded-xl bg-white p-4 shadow-sm">
+                      <QRCode value={qrCodeValue} size={180} level="H" includeMargin={true} />
+                      <p className="break-all text-center font-mono text-xs text-blue-800">{qrCodeValue}</p>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {selectedNotification.read_at ? null : (
+                    <button
+                      type="button"
+                      onClick={() => markAsRead(selectedNotification.id)}
+                      disabled={readBusyId === selectedNotification.id}
+                      className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {readBusyId === selectedNotification.id ? "Saving..." : "Mark as read"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={closeDetails}
+                    className="rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-900"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+          );
+        })()
+      ) : null}
     </div>
   );
 }

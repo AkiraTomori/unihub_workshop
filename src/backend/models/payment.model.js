@@ -4,6 +4,8 @@ export class Payment {
   static async findRegistrationForCheckout(userId, registrationId, trx = db) {
     return trx('registrations as r')
       .join('workshops as w', 'r.workshop_id', 'w.id')
+      .leftJoin('rooms as rm', 'w.room_id', 'rm.id')
+      .join('users as u', 'r.user_id', 'u.id')
       .where('r.id', registrationId)
       .where('r.user_id', userId)
       .select(
@@ -13,8 +15,13 @@ export class Payment {
         'r.status as registration_status',
         'r.qr_code',
         'w.title as workshop_title',
+        'w.start_time as workshop_start_time',
+        'w.speaker as workshop_speaker',
+        'rm.name as room_name',
         'w.price',
-        'w.registered_count'
+        'w.registered_count',
+        'u.email as user_email',
+        'u.full_name as user_full_name'
       )
       .first();
   }
