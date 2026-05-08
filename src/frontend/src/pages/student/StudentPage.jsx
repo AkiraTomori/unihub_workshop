@@ -343,8 +343,11 @@ export default function StudentPage({
           <Card>
             <div className="mb-2 flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold">Notifications</h3>
-              <Link to="/student/notifications" className="text-sm font-medium text-blue-900 underline underline-offset-2">
-                View all
+              <Link
+                to="/student/notifications"
+                className="inline-flex items-center rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-900 hover:bg-blue-50"
+              >
+                View All
               </Link>
             </div>
             <p className="text-sm text-blue-900">{notice}</p>
@@ -354,9 +357,8 @@ export default function StudentPage({
                 <p className="text-xs text-blue-700">No delivered notifications yet.</p>
               ) : (
                 notifications.map((item) => (
-                  <div key={item.id} className="rounded border border-blue-200 bg-blue-50/40 p-2">
-                    <p className="text-xs font-semibold text-blue-900">{item.title} ({item.channel})</p>
-                    <p className="text-xs text-blue-800">{item.message}</p>
+                  <div key={item.id} className="rounded-lg border border-blue-200 bg-blue-50/40 px-3 py-2">
+                    <p className="text-sm font-semibold text-blue-900">{item.title}</p>
                   </div>
                 ))
               )}
