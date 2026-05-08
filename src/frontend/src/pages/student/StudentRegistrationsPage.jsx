@@ -61,7 +61,7 @@ export default function StudentRegistrationsPage({ token, registrations = [], on
                 <div className="min-w-0 space-y-1">
                   <p className="font-semibold text-blue-950">{registration.workshop_title}</p>
                   <p className="text-sm text-blue-800">{formatDate(registration.workshop_date)}</p>
-                  <p className="text-xs text-blue-700">Registration ID: {registration.id}</p>
+                  {/* <p className="text-xs text-blue-700">Registration ID: {registration.id}</p> */}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 md:justify-end">
                   <Badge tone={getStatusTone(registration.status)}>{registration.status}</Badge>

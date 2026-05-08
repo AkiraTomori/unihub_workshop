@@ -234,23 +234,45 @@ export default function StudentPage({
       <div className="relative grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <Card>
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 className="inline-flex items-center gap-2 text-lg font-semibold">
-                  <CalendarDays size={18} />
-                  Student Shortcuts
+            <div className="flex items-center justify-between gap-4">
+              {/* Tiêu đề - flex-1 để nó chiếm không gian còn lại và có thể xuống dòng nếu title quá dài */}
+              <div className="flex-1 min-w-0">
+                <h3 className="flex items-center gap-2 text-lg font-bold text-blue-950 truncate">
+                  <CalendarDays size={20} className="text-blue-600 flex-shrink-0" />
+                  <span className="truncate">Student Shortcuts</span>
                 </h3>
-                <p className="text-sm text-blue-800">Jump to your payments, check-ins, and registration history.</p>
+                <p className="text-sm text-blue-800 hidden md:block truncate">
+                  Jump to your history and payments.
+                </p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Link to="/student/registrations" className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
-                  <span className="inline-flex items-center gap-1"><CheckCircle2 size={14} /> My Registrations</span>
+
+              {/* Nhóm nút - flex-shrink-0 để đảm bảo không bị bóp méo, flex-wrap để xử lý khi màn hình trung bình */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Link 
+                  to="/student/registrations" 
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-900 hover:bg-blue-50 transition-colors whitespace-nowrap shadow-sm"
+                >
+                  <CheckCircle2 size={16} className="text-emerald-600" />
+                  <span className="hidden sm:inline">Registrations</span>
+                  <span className="sm:hidden">Regs</span>
                 </Link>
-                <Link to="/student/payments" className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
-                  <span className="inline-flex items-center gap-1"><CreditCard size={14} /> My Payments</span>
+
+                <Link 
+                  to="/student/payments" 
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-900 hover:bg-blue-50 transition-colors whitespace-nowrap shadow-sm"
+                >
+                  <CreditCard size={16} className="text-blue-600" />
+                  <span className="hidden sm:inline">Payments</span>
+                  <span className="sm:hidden">Pay</span>
                 </Link>
-                <Link to="/student/checkins" className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
-                  <span className="inline-flex items-center gap-1"><QrCode size={14} /> My Check-ins</span>
+
+                <Link 
+                  to="/student/checkins" 
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-900 hover:bg-blue-50 transition-colors whitespace-nowrap shadow-sm"
+                >
+                  <QrCode size={16} className="text-indigo-600" />
+                  <span className="hidden sm:inline">Check-ins</span>
+                  <span className="sm:hidden">Tickets</span>
                 </Link>
               </div>
             </div>
