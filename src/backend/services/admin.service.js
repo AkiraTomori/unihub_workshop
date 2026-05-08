@@ -317,6 +317,8 @@ export class AdminService {
         email: r.email,
         studentCode: r.student_code,
         status: r.status,
+        paymentId: r.payment_id || null,
+        paymentStatus: r.payment_status || null,
         registeredAt: r.created_at,
       })),
     };

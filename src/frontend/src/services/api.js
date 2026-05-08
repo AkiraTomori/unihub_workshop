@@ -269,5 +269,25 @@ export const api = {
   },
   syncCheckins(token, items) {
     return request("/checkins/sync", { token, method: "POST", body: { items } });
+  },
+  async getRegistrationDetail(token, registrationId) {
+    const response = await request(`/registrations/${registrationId}`, { token });
+    return response?.data || null;
+  },
+  async getPaymentDetail(token, paymentId) {
+    const response = await request(`/payments/${paymentId}`, { token });
+    return response?.data || null;
+  },
+  async getFailedNotifications(token) {
+    const response = await request('/admin/notifications/failed', { token });
+    return response?.data || [];
+  },
+  async replayNotifications(token, selectedIds = null) {
+    const response = await request('/admin/notifications/replay', { 
+      token, 
+      method: 'POST', 
+      body: selectedIds ? { notificationIds: selectedIds } : {} 
+    });
+    return response?.data || null;
   }
 };

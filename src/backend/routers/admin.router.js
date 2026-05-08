@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import AdminController from '../controllers/admin.controller.js';
+import NotificationController from '../controllers/notification.controller.js';
 import { requireRole, verifyToken } from '../middlewares/auth.mw.js';
 import { createWorkshopSchema, updateWorkshopSchema, validateRequest } from '../validations/workshop.validation.js';
 
@@ -27,5 +28,7 @@ router.post('/csv-sync/run', (req, res) => AdminController.triggerCsvSync(req, r
 router.get('/csv-sync-logs', (req, res) => AdminController.getCsvSyncLogs(req, res));
 router.get('/workshops/:workshopId/registrations', (req, res) => AdminController.getWorkshopRegistrations(req, res));
 router.get('/checkins/stats', (req, res) => AdminController.getCheckinStats(req, res));
+router.get('/notifications/failed', (req, res) => NotificationController.getFailedNotificationsList(req, res));
+router.post('/notifications/replay', (req, res) => NotificationController.replayFailedNotifications(req, res));
 
 export default router;

@@ -27,6 +27,13 @@ export class Payment {
     return trx('payments').where({ registration_id: registrationId }).first();
   }
 
+  static async findById(paymentId, trx = db) {
+    return trx('payments')
+      .where({ id: paymentId })
+      .select('id', 'registration_id', 'amount', 'provider', 'status', 'transaction_id', 'idempotency_key')
+      .first();
+  }
+
   static async createPayment(trx, paymentData) {
     const [created] = await trx('payments')
       .insert(paymentData)
