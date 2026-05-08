@@ -220,9 +220,6 @@ export const api = {
   updateWorkshop(token, workshopId, payload) {
     return request(`/admin/workshops/${workshopId}`, { token, method: "PUT", body: payload });
   },
-  deleteWorkshop(token, workshopId) {
-    return request(`/admin/workshops/${workshopId}`, { token, method: "DELETE" });
-  },
   cancelWorkshop(token, workshopId) {
     return request(`/admin/workshops/${workshopId}/cancel`, { token, method: "PATCH" });
   },
