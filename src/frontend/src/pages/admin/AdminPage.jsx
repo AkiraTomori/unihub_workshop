@@ -9,7 +9,17 @@ import AdminCheckinStats from "../../components/AdminCheckinStats";
 import AdminCsvSyncManager from "../../components/AdminCsvSyncManager";
 import AdminAuditLogs from "../../components/AdminAuditLogs";
 
-export default function AdminPage({ workshops, token, onWorkshopsChanged, loading, loadError, hasLoaded, onToast }) {
+export default function AdminPage({
+  workshops,
+  token,
+  pagination,
+  onPageChange,
+  onWorkshopsChanged,
+  loading,
+  loadError,
+  hasLoaded,
+  onToast
+}) {
   const navigate = useNavigate();
   const [analytics, setAnalytics] = useState({ activeCount: 0, seatsLeft: 0, aiCompleted: 0 });
   const [csvLog, setCsvLog] = useState({ ran_at: "-", processed_rows: 0, invalid_rows: 0, upsert_conflicts: 0 });
@@ -186,6 +196,31 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
                 </div>
               );
             })}
+            {pagination ? (
+              <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-white p-2 text-sm">
+                <span className="text-blue-800">
+                  Page {pagination.page} / {pagination.totalPages} • Total {pagination.total}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onPageChange?.(pagination.page - 1)}
+                    disabled={!pagination.hasPrevPage}
+                    className="rounded border border-blue-300 px-2 py-1 text-blue-900 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onPageChange?.(pagination.page + 1)}
+                    disabled={!pagination.hasNextPage}
+                    className="rounded border border-blue-300 px-2 py-1 text-blue-900 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </Card>
         </div>

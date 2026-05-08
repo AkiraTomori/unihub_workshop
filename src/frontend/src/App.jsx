@@ -168,6 +168,8 @@ export default function App() {
             <AdminPage
               workshops={workshops}
               token={token}
+              pagination={workshopPagination}
+              onPageChange={goToWorkshopPage}
               onWorkshopsChanged={reloadWorkshops}
               loading={isLoadingBackendData}
               loadError={workshopError}
