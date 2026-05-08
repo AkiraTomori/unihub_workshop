@@ -127,7 +127,7 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 | DELETE | `/admin/workshops/{id}` | Cancel workshop (soft delete) | Admin | `id`, `status`, `deleted_at`, and cancellation confirmation |
 | POST | `/admin/documents` | Upload workshop PDF | Admin | `document_id`, `workshop_id`, `status` |
 | GET | `/admin/documents/{id}` | Check summary status | Admin | `document_id`, `status`, `ai_summary`, `updated_at` |
-| GET | `/admin/stats` | View registration statistics | Admin | `total_workshops`, `total_registrations`, and `by_status { PENDING, CONFIRMED, CANCELLED }` |
+| GET | `/admin/analytics` | View registration statistics | Admin | `total_workshops`, `total_registrations`, and `by_status { PENDING, CONFIRMED, CANCELLED }` |
 
 ### Workshop List Response
 
