@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, CalendarDays, CheckCircle2, CircleDollarSign, CreditCard, ExternalLink, QrCode, UserRound, Users } from "lucide-react";
+import { Bell, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CircleDollarSign, CreditCard, ExternalLink, QrCode, UserRound, Users } from "lucide-react";
 import { Badge, Card, Spinner } from "../../components/ui";
 import { api } from "../../services/api";
 
@@ -17,6 +17,11 @@ export default function StudentPage({
   hasLoaded,
   onToast
 }) {
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [selectedDateKey, setSelectedDateKey] = useState("");
   const [selected, setSelected] = useState(null);
   const [notice, setNotice] = useState("No recent notifications");
   const [submittingWorkshopId, setSubmittingWorkshopId] = useState("");
@@ -26,6 +31,39 @@ export default function StudentPage({
   const registeredWorkshopIds = new Set(myRegistrations.map((item) => item.workshop_id));
   const registrationByWorkshopId = new Map(myRegistrations.map((item) => [item.workshop_id, item]));
   const sortedWorkshops = [...workshops].sort((a, b) => a.date.localeCompare(b.date));
+  const confirmedRegistrations = myRegistrations.filter((item) => item.status === "CONFIRMED");
+
+  function toDateKey(dateValue) {
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  const registrationsByDate = confirmedRegistrations.reduce((acc, item) => {
+    const key = toDateKey(item.workshop_date);
+    if (!key) return acc;
+    if (!acc.has(key)) acc.set(key, []);
+    acc.get(key).push(item);
+    return acc;
+  }, new Map());
+
+  const monthLabel = calendarMonth.toLocaleString(undefined, { month: "long", year: "numeric" });
+  const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
+  const firstWeekDay = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1).getDay();
+  const monthCells = Array.from({ length: firstWeekDay + daysInMonth }, (_, index) => {
+    if (index < firstWeekDay) return null;
+    return index - firstWeekDay + 1;
+  });
+
+  const selectedDayRegistrations = selectedDateKey ? (registrationsByDate.get(selectedDateKey) || []) : [];
+
+  function changeMonth(offset) {
+    setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
+    setSelectedDateKey("");
+  }
 
   async function register(workshop) {
     if (registeredWorkshopIds.has(workshop.id)) {
@@ -348,6 +386,84 @@ export default function StudentPage({
         </div>
 
         <div className="space-y-4">
+          <Card>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="inline-flex items-center gap-2 text-lg font-semibold">
+                <CalendarDays size={18} />
+                Registration Calendar
+              </h3>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => changeMonth(-1)}
+                  className="rounded border border-blue-300 p-1 text-blue-900 hover:bg-blue-50"
+                  aria-label="Previous month"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => changeMonth(1)}
+                  className="rounded border border-blue-300 p-1 text-blue-900 hover:bg-blue-50"
+                  aria-label="Next month"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+            <p className="mb-2 text-sm font-medium text-blue-900">{monthLabel}</p>
+            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-blue-700">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <span key={day}>{day}</span>
+              ))}
+            </div>
+            <div className="mt-1 grid grid-cols-7 gap-1">
+              {monthCells.map((day, idx) => {
+                if (!day) return <span key={`empty-${idx}`} className="h-8" />;
+                const dateKey = toDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day));
+                const hasRegistration = registrationsByDate.has(dateKey);
+                const isSelected = selectedDateKey === dateKey;
+                return (
+                  <button
+                    key={dateKey}
+                    type="button"
+                    onClick={() => setSelectedDateKey(dateKey)}
+                    className={`relative h-8 rounded text-xs font-medium transition ${
+                      isSelected
+                        ? "bg-blue-900 text-white"
+                        : hasRegistration
+                        ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                        : "bg-blue-50 text-blue-900 hover:bg-blue-100"
+                    }`}
+                  >
+                    {day}
+                    {hasRegistration && !isSelected ? (
+                      <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 border-t border-blue-100 pt-3">
+              {!selectedDateKey ? (
+                <p className="text-xs text-blue-700">Pick a highlighted day to see confirmed workshops.</p>
+              ) : selectedDayRegistrations.length === 0 ? (
+                <p className="text-xs text-blue-700">No confirmed workshops on {selectedDateKey}.</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-blue-900">Registered workshops on {selectedDateKey}</p>
+                  {selectedDayRegistrations.map((reg) => (
+                    <div key={reg.id} className="rounded-lg border border-blue-200 bg-blue-50/50 px-2 py-1.5">
+                      <p className="text-xs font-semibold text-blue-900">{reg.workshop_title || reg.workshop_id}</p>
+                      <p className="text-[11px] text-blue-700">{new Date(reg.workshop_date).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+
           <Card>
             <div className="mb-2 flex items-center justify-between gap-3">
               <h3 className="inline-flex items-center gap-2 text-lg font-semibold"><Bell size={18} /> Notifications</h3>
