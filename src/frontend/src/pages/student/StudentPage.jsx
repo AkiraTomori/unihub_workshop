@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Bell, CalendarDays, CheckCircle2, CircleDollarSign, CreditCard, ExternalLink, QrCode, UserRound, Users } from "lucide-react";
 import { Badge, Card, Spinner } from "../../components/ui";
 import { api } from "../../services/api";
 
@@ -197,18 +198,21 @@ export default function StudentPage({
           <Card>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <h3 className="text-lg font-semibold">Student Shortcuts</h3>
+                <h3 className="inline-flex items-center gap-2 text-lg font-semibold">
+                  <CalendarDays size={18} />
+                  Student Shortcuts
+                </h3>
                 <p className="text-sm text-blue-800">Jump to your payments, check-ins, and registration history.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link to="/student/registrations" className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
-                  My Registrations
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 size={14} /> My Registrations</span>
                 </Link>
                 <Link to="/student/payments" className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
-                  My Payments
+                  <span className="inline-flex items-center gap-1"><CreditCard size={14} /> My Payments</span>
                 </Link>
                 <Link to="/student/checkins" className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
-                  My Check-ins
+                  <span className="inline-flex items-center gap-1"><QrCode size={14} /> My Check-ins</span>
                 </Link>
               </div>
             </div>
@@ -216,7 +220,7 @@ export default function StudentPage({
 
           <Card>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Workshop Catalog</h3>
+              <h3 className="inline-flex items-center gap-2 text-lg font-semibold"><CalendarDays size={18} /> Workshop Catalog</h3>
               <div className="flex items-center gap-2">
                 {loading ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
@@ -263,17 +267,21 @@ export default function StudentPage({
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-blue-950">{w.title}</p>
                       <p className="text-sm text-blue-800">
-                        {w.speaker} • {w.room} • {w.date}
+                        <span className="inline-flex items-center gap-1"><UserRound size={13} /> {w.speaker}</span> • {w.room} • {w.date}
                       </p>
                       <p className="mt-1 text-sm">
-                        Seats: <span className="font-semibold">{w.seatsLeft}/{w.totalSeats}</span>
+                        <span className="inline-flex items-center gap-1"><Users size={13} /> Seats:</span>{" "}
+                        <span className="font-semibold">{w.seatsLeft}/{w.totalSeats}</span>
                       </p>
                     </div>
                     <div className="flex min-w-[220px] flex-col justify-end text-right md:min-h-[140px]">
-                      <p className="mb-2 text-sm font-semibold">{w.fee === 0 ? "Free" : `${w.fee.toLocaleString()} VND`}</p>
+                      <p className="mb-2 inline-flex items-center justify-end gap-1 text-sm font-semibold">
+                        <CircleDollarSign size={14} />
+                        {w.fee === 0 ? "Free" : `${w.fee.toLocaleString()} VND`}
+                      </p>
                       <div className="mt-auto flex items-center justify-end gap-2">
                         <Link to={`/student/workshops/${w.id}`} className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">
-                          Details
+                          <span className="inline-flex items-center gap-1"><ExternalLink size={14} /> Details</span>
                         </Link>
                         <button
                           onClick={() => requestRegisterConfirmation(w)}
@@ -329,7 +337,7 @@ export default function StudentPage({
           </Card>
 
           <Card>
-            <h3 className="mb-2 text-lg font-semibold">Payment Resilience States</h3>
+            <h3 className="mb-2 inline-flex items-center gap-2 text-lg font-semibold"><CreditCard size={18} /> Payment Resilience States</h3>
             <div className="grid gap-2 md:grid-cols-3">
               <Badge tone="green">Circuit: Closed</Badge>
               <Badge tone="red">Circuit: Open</Badge>
@@ -342,12 +350,12 @@ export default function StudentPage({
         <div className="space-y-4">
           <Card>
             <div className="mb-2 flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold">Notifications</h3>
+              <h3 className="inline-flex items-center gap-2 text-lg font-semibold"><Bell size={18} /> Notifications</h3>
               <Link
                 to="/student/notifications"
                 className="inline-flex items-center rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-900 hover:bg-blue-50"
               >
-                View All
+                <span className="inline-flex items-center gap-1"><ExternalLink size={14} /> View All</span>
               </Link>
             </div>
             <p className="text-sm text-blue-900">{notice}</p>

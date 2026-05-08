@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ArrowLeft, CircleDollarSign, MapPinned, MicVocal, Timer, Users } from "lucide-react";
 import { Badge, Card, Spinner } from "../components/ui";
 import { api } from "../services/api";
 
@@ -94,16 +95,16 @@ export default function WorkshopDetailPage({ token, myRegistrations, onWorkshops
           <p className="mt-1 text-sm text-blue-800">Thông tin chi tiết workshop và đăng ký.</p>
         </div>
         <Link to="/student/workshops" className="text-sm font-semibold text-blue-700 hover:underline">
-          Quay lại
+          <span className="inline-flex items-center gap-1"><ArrowLeft size={14} /> Quay lại</span>
         </Link>
       </div>
 
       <div className="grid gap-3 rounded-lg border border-blue-100 bg-blue-50/30 p-3 md:grid-cols-2">
-        <p className="text-sm text-blue-900"><span className="font-semibold">Diễn giả:</span> {workshop.speaker || "TBD"}</p>
-        <p className="text-sm text-blue-900"><span className="font-semibold">Phòng tổ chức:</span> {workshop.room}</p>
-        <p className="text-sm text-blue-900"><span className="font-semibold">Thời gian:</span> {new Date(workshop.start_time).toLocaleString()}</p>
-        <p className="text-sm text-blue-900"><span className="font-semibold">Số chỗ còn lại (realtime):</span> {workshop.seats_left}/{workshop.total_seats}</p>
-        <p className="text-sm text-blue-900"><span className="font-semibold">Chi phí:</span> {workshop.fee === 0 ? "Miễn phí" : `${Number(workshop.fee).toLocaleString()} VND`}</p>
+        <p className="inline-flex items-center gap-2 text-sm text-blue-900"><MicVocal size={14} /><span><span className="font-semibold">Diễn giả:</span> {workshop.speaker || "TBD"}</span></p>
+        <p className="inline-flex items-center gap-2 text-sm text-blue-900"><MapPinned size={14} /><span><span className="font-semibold">Phòng tổ chức:</span> {workshop.room}</span></p>
+        <p className="inline-flex items-center gap-2 text-sm text-blue-900"><Timer size={14} /><span><span className="font-semibold">Thời gian:</span> {new Date(workshop.start_time).toLocaleString()}</span></p>
+        <p className="inline-flex items-center gap-2 text-sm text-blue-900"><Users size={14} /><span><span className="font-semibold">Số chỗ còn lại (realtime):</span> {workshop.seats_left}/{workshop.total_seats}</span></p>
+        <p className="inline-flex items-center gap-2 text-sm text-blue-900"><CircleDollarSign size={14} /><span><span className="font-semibold">Chi phí:</span> {workshop.fee === 0 ? "Miễn phí" : `${Number(workshop.fee).toLocaleString()} VND`}</span></p>
       </div>
 
       {workshop.room_map_image_url ? (

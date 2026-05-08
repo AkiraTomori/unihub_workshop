@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Activity, BarChart3, CalendarDays, FileText, FolderSync, PencilLine, Trash2, Users } from "lucide-react";
 import { Badge, Card, Spinner } from "../../components/ui";
 import { api } from "../../services/api";
 import WorkshopFilter from "../../components/WorkshopFilter";
@@ -17,12 +18,12 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
   const [activeTab, setActiveTab] = useState("workshops");
 
   const tabs = [
-    { id: "workshops", label: "Workshops", icon: "📅" },
-    { id: "documents", label: "Documents", icon: "📄" },
-    { id: "analytics", label: "Analytics", icon: "📊" },
-    { id: "csv-sync", label: "CSV Sync", icon: "📥" },
-    { id: "audit", label: "Audit", icon: "📝" },
-    { id: "deleted", label: "Deleted", icon: "🗑️" }
+    { id: "workshops", label: "Workshops", icon: CalendarDays },
+    { id: "documents", label: "Documents", icon: FileText },
+    { id: "analytics", label: "Analytics", icon: BarChart3 },
+    { id: "csv-sync", label: "CSV Sync", icon: FolderSync },
+    { id: "audit", label: "Audit", icon: Activity },
+    { id: "deleted", label: "Deleted", icon: Trash2 }
   ];
 
   useEffect(() => {
@@ -60,19 +61,25 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
     <div className="space-y-4">
       {/* Tab Navigation */}
       <div className="flex gap-1 border-b border-blue-200 flex-wrap">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? "border-b-2 border-blue-900 text-blue-900"
-                : "text-blue-600 hover:text-blue-900"
-            }`}
-          >
-            {tab.icon} {tab.label}
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === tab.id
+                  ? "border-b-2 border-blue-900 text-blue-900"
+                  : "text-blue-600 hover:text-blue-900"
+              }`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <Icon size={14} />
+                {tab.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Workshops Tab */}
@@ -149,6 +156,7 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
                       onClick={() => navigate(`/admin/workshops/${w.id}/edit`)}
                       className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-3 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-50"
                     >
+                      <PencilLine size={13} />
                       Edit
                     </button>
                     <button
@@ -156,6 +164,7 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
                       onClick={() => navigate(`/admin/workshops/${w.id}/participants`)}
                       className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-3 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-50"
                     >
+                      <Users size={13} />
                       Participants
                     </button>
                     <button
@@ -197,21 +206,21 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
                 onClick={() => setActiveTab("documents")}
                 className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50 transition-all"
               >
-                📄 Manage Documents
+                <span className="inline-flex items-center gap-2"><FileText size={14} /> Manage Documents</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("analytics")}
                 className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50 transition-all"
               >
-                📊 View Analytics
+                <span className="inline-flex items-center gap-2"><BarChart3 size={14} /> View Analytics</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("deleted")}
                 className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50 transition-all"
               >
-                🗑️ View Deleted
+                <span className="inline-flex items-center gap-2"><Trash2 size={14} /> View Deleted</span>
               </button>
             </div>
           </Card>
