@@ -64,6 +64,24 @@ export class PaymentService {
       };
     });
   }
+
+  static async getPaymentById(paymentId) {
+    const payment = await Payment.findById(paymentId);
+
+    if (!payment) {
+      throw { status: 404, message: 'Payment not found' };
+    }
+
+    return {
+      payment_id: payment.id,
+      registration_id: payment.registration_id,
+      amount: Number(payment.amount),
+      provider: payment.provider,
+      status: payment.status,
+      transaction_id: payment.transaction_id,
+      idempotency_key: payment.idempotency_key,
+    };
+  }
 }
 
 export default PaymentService;

@@ -12,6 +12,31 @@ export class NotificationController {
       });
     }
   }
+
+  static async getFailedNotificationsList(req, res) {
+    try {
+      const notifications = await NotificationService.getFailedNotificationsList();
+      return res.status(200).json({ data: notifications });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch failed notifications',
+      });
+    }
+  }
+
+  static async replayFailedNotifications(req, res) {
+    try {
+      const { notificationIds } = req.body;
+      const result = await NotificationService.replayFailedNotifications(notificationIds);
+      return res.status(200).json({ data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'ERROR',
+        message: error.message || 'Failed to replay notifications',
+      });
+    }
+  }
 }
 
 export default NotificationController;

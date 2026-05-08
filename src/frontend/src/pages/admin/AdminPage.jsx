@@ -6,6 +6,8 @@ import WorkshopFilter from "../../components/WorkshopFilter";
 import DocumentManager from "../../components/DocumentManager";
 import AdminCheckinStats from "../../components/AdminCheckinStats";
 import AdminCsvSyncManager from "../../components/AdminCsvSyncManager";
+import AdminNotificationReplay from "../../components/AdminNotificationReplay";
+import AdminAuditLogs from "../../components/AdminAuditLogs";
 
 export default function AdminPage({ workshops, token, onWorkshopsChanged, loading, loadError, hasLoaded, onToast }) {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
     { id: "documents", label: "Documents", icon: "📄" },
     { id: "analytics", label: "Analytics", icon: "📊" },
     { id: "csv-sync", label: "CSV Sync", icon: "📥" },
+    { id: "audit", label: "Audit", icon: "📝" },
     { id: "deleted", label: "Deleted", icon: "🗑️" }
   ];
 
@@ -282,6 +285,9 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
       <Card>
         <AdminCheckinStats token={token} onToast={onToast} />
       </Card>
+      <Card>
+        <AdminNotificationReplay token={token} onToast={onToast} />
+      </Card>
       </div>
       )}
 
@@ -303,6 +309,11 @@ export default function AdminPage({ workshops, token, onWorkshopsChanged, loadin
       {/* CSV Sync Tab */}
       {activeTab === "csv-sync" && (
       <AdminCsvSyncManager token={token} onToast={onToast} />
+      )}
+
+      {/* Audit Tab */}
+      {activeTab === "audit" && (
+      <AdminAuditLogs token={token} onToast={onToast} />
       )}
     </div>
   );

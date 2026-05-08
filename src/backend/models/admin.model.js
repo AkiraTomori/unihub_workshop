@@ -2,6 +2,18 @@ import { randomUUID } from 'crypto';
 import db from '../config/db.js';
 
 export class Admin {
+  static async insertAuditLog({ actorId = null, entityId, action, entityType, oldPayload = null, newPayload = null }) {
+    await db('audit_logs').insert({
+      id: randomUUID(),
+      actor_id: actorId,
+      entity_id: entityId,
+      action,
+      entity_type: entityType,
+      old_payload: oldPayload,
+      new_payload: newPayload,
+    });
+  }
+
   static async findFirstRoomId() {
     const room = await db('rooms').select('id').orderBy('created_at', 'asc').first();
     return room?.id || null;
@@ -76,16 +88,68 @@ export class Admin {
     };
   }
 
-  static async insertWorkshopAuditLog({ actorId, workshopId, oldStatus, newStatus }) {
-    await db('audit_logs').insert({
-      id: randomUUID(),
-      actor_id: actorId,
-      entity_id: workshopId,
-      action: 'CANCEL_WORKSHOP',
-      entity_type: 'workshops',
-      old_payload: JSON.stringify({ status: oldStatus }),
-      new_payload: JSON.stringify({ status: newStatus }),
-    });
+  static async getAuditLogs({ page = 1, limit = 20, entityType = null, action = null } = {}) {
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const pageSize = Math.max(1, Number(limit) || 20);
+    const offset = (pageNumber - 1) * pageSize;
+
+    const baseQuery = db('audit_logs as a')
+      .leftJoin('users as u', 'a.actor_id', 'u.id')
+      .select(
+        'a.id',
+        'a.actor_id',
+        'u.full_name as actor_name',
+        'u.email as actor_email',
+        'a.entity_id',
+        'a.action',
+        'a.entity_type',
+        'a.old_payload',
+        'a.new_payload',
+        'a.created_at'
+      )
+      .orderBy('a.created_at', 'desc')
+      .offset(offset)
+      .limit(pageSize);
+
+    if (entityType) {
+      baseQuery.where('a.entity_type', entityType);
+    }
+
+    if (action) {
+      baseQuery.where('a.action', action);
+    }
+
+    const countQuery = db('audit_logs as a');
+    if (entityType) {
+      countQuery.where('a.entity_type', entityType);
+    }
+    if (action) {
+      countQuery.where('a.action', action);
+    }
+
+    const [countRow] = await countQuery.count('* as count');
+    const rows = await baseQuery;
+
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        actor_id: row.actor_id,
+        actor_name: row.actor_name,
+        actor_email: row.actor_email,
+        entity_id: row.entity_id,
+        action: row.action,
+        entity_type: row.entity_type,
+        old_payload: row.old_payload,
+        new_payload: row.new_payload,
+        created_at: row.created_at,
+      })),
+      pagination: {
+        page: pageNumber,
+        limit: pageSize,
+        total: Number(countRow?.count || 0),
+        totalPages: Math.max(1, Math.ceil(Number(countRow?.count || 0) / pageSize)),
+      },
+    };
   }
 
   static async getDocumentByWorkshopId(workshopId) {

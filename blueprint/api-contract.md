@@ -124,10 +124,10 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 | GET | `/workshops/{id}` | Get workshop details | Authenticated | full workshop object with `description`, `cover_image_url`, `room { id, name, base_capacity }`, `capacity`, `registered_count`, `remaining_seats`, `price`, and `document { status, ai_summary }` |
 | POST | `/admin/workshops` | Create workshop | Admin | created workshop object with `id`, `title`, `status`, and `workshop_id`-linked fields |
 | PUT | `/admin/workshops/{id}` | Update workshop | Admin | updated workshop object with `id` and `updated=true` |
-| DELETE | `/admin/workshops/{id}` | Cancel workshop (soft delete) | Admin | `id`, `status`, `deleted_at`, and cancellation confirmation |
+| PATCH | `/admin/workshops/{id}/cancel` | Cancel workshop (soft delete) | Admin | `id`, `status`, `deleted_at`, and cancellation confirmation |
 | POST | `/admin/documents` | Upload workshop PDF | Admin | `document_id`, `workshop_id`, `status` |
 | GET | `/admin/documents/{id}` | Check summary status | Admin | `document_id`, `status`, `ai_summary`, `updated_at` |
-| GET | `/admin/stats` | View registration statistics | Admin | `total_workshops`, `total_registrations`, and `by_status { PENDING, CONFIRMED, CANCELLED }` |
+| GET | `/admin/analytics` | View registration statistics | Admin | `total_workshops`, `total_registrations`, and `by_status { PENDING, CONFIRMED, CANCELLED }` |
 
 ### Workshop List Response
 

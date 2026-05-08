@@ -40,6 +40,33 @@ export class Registration {
       .orderBy('r.created_at', 'desc');
   }
 
+  static async findById(registrationId) {
+    return db('registrations as r')
+      .join('workshops as w', 'r.workshop_id', 'w.id')
+      .join('users as u', 'r.user_id', 'u.id')
+      .leftJoin('payments as p', 'r.id', 'p.registration_id')
+      .where('r.id', registrationId)
+      .select(
+        'r.id as registration_id',
+        'r.user_id',
+        'r.workshop_id',
+        'r.status',
+        'r.expires_at',
+        'r.qr_code',
+        'r.created_at as registration_created_at',
+        'r.updated_at as registration_updated_at',
+        'w.title as workshop_title',
+        'w.start_time as workshop_start_time',
+        'p.id as payment_id',
+        'p.amount as payment_amount',
+        'p.provider as payment_provider',
+        'p.status as payment_status',
+        'p.transaction_id as payment_transaction_id',
+        'p.idempotency_key as payment_idempotency_key'
+      )
+      .first();
+  }
+
   static async findRegistrationForCheckout(userId, registrationId, trx = db) {
     return trx('registrations as r')
       .join('workshops as w', 'r.workshop_id', 'w.id')
@@ -82,6 +109,7 @@ export class Registration {
   static async listByWorkshop(workshopId) {
     return db('registrations as r')
       .join('users as u', 'r.user_id', 'u.id')
+      .leftJoin('payments as p', 'r.id', 'p.registration_id')
       .where('r.workshop_id', workshopId)
       .whereNot('r.status', 'CANCELLED')
       .select(
@@ -91,7 +119,9 @@ export class Registration {
         'r.created_at',
         'u.full_name',
         'u.email',
-        'u.student_code'
+        'u.student_code',
+        'p.id as payment_id',
+        'p.status as payment_status'
       )
       .orderBy('r.created_at', 'desc');
   }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import AdminParticipantsList from '../../components/AdminParticipantsList';
+import PaymentDetailModal from '../../components/PaymentDetailModal';
 import { Card } from '../../components/ui';
 
 export default function AdminWorkshopParticipantsPage({ token, onToast }) {
@@ -9,6 +10,7 @@ export default function AdminWorkshopParticipantsPage({ token, onToast }) {
   const navigate = useNavigate();
   const [workshop, setWorkshop] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedPaymentId, setSelectedPaymentId] = useState(null);
 
   useEffect(() => {
     loadWorkshop();
@@ -50,8 +52,18 @@ export default function AdminWorkshopParticipantsPage({ token, onToast }) {
             workshopId={workshopId}
             token={token}
             onToast={onToast}
+            onViewPayment={(paymentId) => setSelectedPaymentId(paymentId)}
           />
         </Card>
+
+        {selectedPaymentId && (
+          <PaymentDetailModal
+            paymentId={selectedPaymentId}
+            token={token}
+            onClose={() => setSelectedPaymentId(null)}
+            onToast={onToast}
+          />
+        )}
       </div>
     </div>
   );

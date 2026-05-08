@@ -63,6 +63,42 @@ export class RegistrationService {
   static async listMyRegistrations(userId) {
     return Registration.listMyRegistrations(userId);
   }
+
+  static async getRegistrationById(registrationId) {
+    const reg = await Registration.findById(registrationId);
+
+    if (!reg) {
+      throw { status: 404, message: 'Registration not found' };
+    }
+
+    // Fetch checkins for this registration
+    const checkins = await db('checkins')
+      .where({ registration_id: registrationId })
+      .orderBy('scanned_at', 'asc')
+      .select('scanned_at', 'device_id');
+
+    const response = {
+      registration_id: reg.registration_id,
+      status: reg.status,
+      expires_at: reg.expires_at,
+      qr_code: reg.qr_code,
+      workshop: {
+        id: reg.workshop_id,
+        title: reg.workshop_title,
+        start_time: reg.workshop_start_time,
+      },
+      payment: reg.payment_id ? {
+        status: reg.payment_status,
+        amount: Number(reg.payment_amount) || 0,
+      } : null,
+      checkins: checkins.map(c => ({
+        scanned_at: c.scanned_at,
+        device_id: c.device_id,
+      })),
+    };
+
+    return response;
+  }
 }
 
 export default RegistrationService;

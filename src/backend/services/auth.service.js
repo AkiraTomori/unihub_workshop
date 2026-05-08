@@ -259,45 +259,45 @@ export class AuthService {
   /**
    * Change password
    */
-  static async changePassword(userId, oldPassword, newPassword) {
-    const user = await User.findById(userId);
+  // static async changePassword(userId, oldPassword, newPassword) {
+  //   const user = await User.findById(userId);
 
-    if (!user) {
-      throw {
-        status: 404,
-        code: 'USER_NOT_FOUND',
-        message: 'User not found',
-      };
-    }
+  //   if (!user) {
+  //     throw {
+  //       status: 404,
+  //       code: 'USER_NOT_FOUND',
+  //       message: 'User not found',
+  //     };
+  //   }
 
-    // Verify old password
-    const isOldPasswordValid = await comparePassword(oldPassword, user.password_hash);
-    if (!isOldPasswordValid) {
-      throw {
-        status: 400,
-        code: 'INVALID_OLD_PASSWORD',
-        message: 'Old password is incorrect',
-      };
-    }
+  //   // Verify old password
+  //   const isOldPasswordValid = await comparePassword(oldPassword, user.password_hash);
+  //   if (!isOldPasswordValid) {
+  //     throw {
+  //       status: 400,
+  //       code: 'INVALID_OLD_PASSWORD',
+  //       message: 'Old password is incorrect',
+  //     };
+  //   }
 
-    // Hash new password
-    const newPasswordHash = await hashPassword(newPassword);
+  //   // Hash new password
+  //   const newPasswordHash = await hashPassword(newPassword);
 
-    // Update password
-    await User.update(userId, { password_hash: newPasswordHash });
+  //   // Update password
+  //   await User.update(userId, { password_hash: newPasswordHash });
 
-    // Revoke all sessions (force re-login)
-    await UserSession.revokeAllByUserId(userId);
+  //   // Revoke all sessions (force re-login)
+  //   await UserSession.revokeAllByUserId(userId);
 
-    return { message: 'Password changed successfully' };
-  }
+  //   return { message: 'Password changed successfully' };
+  // }
 
-  /**
-   * Verify password
-   */
-  static async verifyPassword(password, hash) {
-    return comparePassword(password, hash);
-  }
+  // /**
+  //  * Verify password
+  //  */
+  // static async verifyPassword(password, hash) {
+  //   return comparePassword(password, hash);
+  // }
 }
 
 export default AuthService;
