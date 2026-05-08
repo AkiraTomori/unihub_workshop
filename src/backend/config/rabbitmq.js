@@ -1,6 +1,7 @@
 import amqp from 'amqplib';
+import { config } from './config.js';
 
-const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672';
+const RABBITMQ_URL = config.rabbitmq.url;
 const EXCHANGE_NAME = 'workshop_events';
 const QUEUE_PREFIX = 'queue_';
 

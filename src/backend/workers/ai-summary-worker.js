@@ -3,16 +3,17 @@ import fetch from 'node-fetch';
 import Admin from '../models/admin.model.js';
 import { consumeQueue, createQueue, closeRabbitMQ } from '../config/rabbitmq.js';
 import { generateSummary, validateText } from '../config/vertex-ai.js';
+import { config } from '../config/config.js';
 import db from '../config/db.js';
 
 const MAX_PDF_SIZE = 50 * 1024 * 1024; // 50MB
 const PDF_EXTRACT_TIMEOUT = 30 * 1000; // 30 seconds
-const MAX_SUMMARY_LENGTH = Number(process.env.MAX_SUMMARY_LENGTH || 1800);
+const MAX_SUMMARY_LENGTH = config.worker.maxSummaryLength;
 const QUEUE_NAME = 'ai_summary_jobs';
 const ROUTING_KEY = 'document.uploaded';
 
 // Debug flag: enable verbose worker logs when WORKER_DEBUG=true
-const DEBUG = process.env.WORKER_DEBUG === 'true' || process.env.NODE_ENV !== 'production';
+const DEBUG = config.worker.debug || config.nodeEnv !== 'production';
 function debugLog(...args) {
   if (DEBUG) console.log('[Worker][DEBUG]', ...args);
 }

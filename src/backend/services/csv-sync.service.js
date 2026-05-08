@@ -8,6 +8,7 @@ import { config } from '../config/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+let latestUploadedCsvPath = null;
 
 function resolveCsvFilePath(inputPath) {
   const requestedPath = inputPath || './data/csv-sync/latest.csv';
@@ -237,7 +238,7 @@ export class CsvSyncService {
   }
 
   static getLatestCsvStoragePath() {
-    return getCsvSyncStoragePath('latest.csv');
+    return latestUploadedCsvPath || getCsvSyncStoragePath('latest.csv');
   }
 
   static async saveUploadedCsvFile(fileBuffer, originalFileName) {
@@ -249,13 +250,15 @@ export class CsvSyncService {
       throw new Error('Only CSV files are allowed');
     }
 
-    const storageDir = path.dirname(this.getLatestCsvStoragePath());
+    const storagePath = getCsvSyncStoragePath(path.basename(originalFileName));
+    const storageDir = path.dirname(storagePath);
     await fs.promises.mkdir(storageDir, { recursive: true });
-    await fs.promises.writeFile(this.getLatestCsvStoragePath(), fileBuffer);
+    await fs.promises.writeFile(storagePath, fileBuffer);
+    latestUploadedCsvPath = storagePath;
 
     return {
       fileName: originalFileName,
-      storedPath: this.getLatestCsvStoragePath(),
+      storedPath: storagePath,
       size: fileBuffer.length,
     };
   }

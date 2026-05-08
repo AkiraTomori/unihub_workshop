@@ -1,8 +1,9 @@
 import { VertexAI } from '@google-cloud/vertexai';
+import { config } from './config.js';
 
-const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT;
-const LOCATION = process.env.VERTEX_AI_LOCATION || 'us-central1';
-const MODEL_NAME = 'gemini-2.5-flash';
+const PROJECT_ID = config.vertexAI.projectId;
+const LOCATION = config.vertexAI.location;
+const MODEL_NAME = config.vertexAI.modelName;
 
 let vertexAI = null;
 

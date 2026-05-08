@@ -1,4 +1,5 @@
 import AuthService from '../services/auth.service.js';
+import { config } from '../config/config.js';
 
 export class AuthController {
   /**
@@ -15,7 +16,7 @@ export class AuthController {
       // Set refresh token as HttpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.isProduction,
         sameSite: 'strict',
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });

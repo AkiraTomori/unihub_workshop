@@ -5,6 +5,7 @@
  */
 import CsvSyncService from '../services/csv-sync.service.js';
 import db from '../config/db.js';
+import { config } from '../config/config.js';
 
 // Schedule time (2:00 AM every day)
 const SCHEDULED_HOUR = 2;
@@ -29,7 +30,7 @@ function getTimeUntilNextRun(nextRun) {
 }
 
 async function runCsvSync() {
-  const csvPath = process.env.CSV_FILE_PATH || CsvSyncService.getLatestCsvStoragePath();
+  const csvPath = config.csvSync.filePath || CsvSyncService.getLatestCsvStoragePath();
 
   try {
     console.log(`[CSV Sync Worker] Starting sync from ${csvPath}`);
@@ -54,11 +55,11 @@ async function scheduleNextRun() {
 }
 
 async function start() {
-  console.log('🚀 CSV Sync Worker started');
-  console.log(`📅 Scheduled time: ${SCHEDULED_HOUR.toString().padStart(2, '0')}:${SCHEDULED_MINUTE.toString().padStart(2, '0')} every day`);
+  console.log('CSV Sync Worker started');
+  console.log(`Scheduled time: ${SCHEDULED_HOUR.toString().padStart(2, '0')}:${SCHEDULED_MINUTE.toString().padStart(2, '0')} every day`);
 
   // Run immediately on startup if it's testing/debugging
-  if (process.env.RUN_ON_STARTUP === 'true') {
+  if (config.csvSync.runOnStartup) {
     console.log('[CSV Sync Worker] Running sync on startup (RUN_ON_STARTUP=true)');
     await runCsvSync();
   }
@@ -75,6 +76,6 @@ async function start() {
 }
 
 start().catch((error) => {
-  console.error('❌ Failed to start CSV Sync Worker:', error);
+  console.error('Failed to start CSV Sync Worker:', error);
   process.exit(1);
 });

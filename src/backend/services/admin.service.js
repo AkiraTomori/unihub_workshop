@@ -5,6 +5,7 @@ import Checkin from '../models/checkin.model.js';
 import Registration from '../models/registration.model.js';
 import CsvSyncService from './csv-sync.service.js';
 import storage from '../config/storage.js';
+import { config } from '../config/config.js';
 import { publishEvent } from '../config/rabbitmq.js';
 
 function parseDateFallback(dateString) {
@@ -263,7 +264,7 @@ export class AdminService {
       // Generate unique file name for Supabase
       const timestamp = Date.now();
       const fileName = `${workshopId}-${timestamp}-${originalFileName}`;
-      const bucket = process.env.DOCUMENT_BUCKET || 'documents';
+      const bucket = config.storage.documentBucket;
 
       // Upload to Supabase
       const uploadResult = await storage.uploadDocument(bucket, fileName, fileBuffer, 'application/pdf');
@@ -402,7 +403,7 @@ export class AdminService {
   }
 
   static async triggerCsvSync(actorId) {
-    const csvPath = process.env.CSV_FILE_PATH || CsvSyncService.getLatestCsvStoragePath();
+    const csvPath = config.csvSync.filePath || CsvSyncService.getLatestCsvStoragePath();
     
     try {
       const result = await CsvSyncService.runSync(csvPath);

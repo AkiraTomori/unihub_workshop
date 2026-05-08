@@ -6,6 +6,7 @@ export const config = {
   // Server
   port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
+  isProduction: process.env.NODE_ENV === 'production',
   
   // Database
   database: {
@@ -37,6 +38,37 @@ export const config = {
   // CORS
   cors: {
     origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(','),
+  },
+
+  // RabbitMQ
+  rabbitmq: {
+    url: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
+  },
+
+  // Supabase Storage
+  storage: {
+    url: process.env.SUPABASE_URL || '',
+    serviceKey: process.env.SUPABASE_SERVICE_KEY || '',
+    documentBucket: process.env.DOCUMENT_BUCKET || 'documents',
+  },
+
+  // CSV Sync
+  csvSync: {
+    filePath: process.env.CSV_FILE_PATH || '',
+    runOnStartup: process.env.RUN_ON_STARTUP === 'true',
+  },
+
+  // Workers
+  worker: {
+    debug: process.env.WORKER_DEBUG === 'true',
+    maxSummaryLength: Number(process.env.MAX_SUMMARY_LENGTH || 1800),
+  },
+
+  // Vertex AI
+  vertexAI: {
+    projectId: process.env.GOOGLE_CLOUD_PROJECT || '',
+    location: process.env.VERTEX_AI_LOCATION || 'us-central1',
+    modelName: process.env.VERTEX_AI_MODEL_NAME || 'gemini-2.5-flash',
   },
 };
 
