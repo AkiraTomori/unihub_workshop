@@ -244,3 +244,11 @@ CREATE TRIGGER set_timestamp_workshops BEFORE UPDATE ON workshops FOR EACH ROW E
 CREATE TRIGGER set_timestamp_registrations BEFORE UPDATE ON registrations FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
 CREATE TRIGGER set_timestamp_payments BEFORE UPDATE ON payments FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
 CREATE TRIGGER set_timestamp_documents BEFORE UPDATE ON documents FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
+
+ALTER TABLE payments ADD COLUMN refund_reason VARCHAR(255);
+ALTER TABLE payments ADD COLUMN refund_processed_at TIMESTAMP WITH TIME ZONE;
+
+-- Add index for efficient webhook processing
+CREATE INDEX IF NOT EXISTS idx_payments_idempotency_key ON payments(idempotency_key);
+CREATE INDEX IF NOT EXISTS idx_payments_transaction_id ON payments(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
