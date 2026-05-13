@@ -305,6 +305,40 @@ export const api = {
       throw error;
     }
   },
+  async getMyRefunds(token) {
+    try {
+      const response = await request('/payments/refunds/me', { token });
+      return Array.isArray(response?.data) ? response.data : [];
+    } catch (error) {
+      if (error.status === 404) return [];
+      throw error;
+    }
+  },
+  async getRefundStatus(token, paymentId) {
+    const response = await request(`/payments/refund/${paymentId}/status`, { token });
+    return response?.data || null;
+  },
+  async requestRefund(token, paymentId, reason) {
+    const response = await request(`/payments/refund/${paymentId}`, {
+      token,
+      method: 'POST',
+      body: { reason }
+    });
+    return response?.data || null;
+  },
+  async getAdminRefunds(token, page = 1, pageSize = 20, reason = '', workshop_id = '') {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('pageSize', String(pageSize));
+    if (reason) params.set('reason', reason);
+    if (workshop_id) params.set('workshop_id', workshop_id);
+    const response = await request(`/admin/refunds?${params.toString()}`, { token });
+    return response || { data: [], pagination: {} };
+  },
+  async getAdminRefundStats(token) {
+    const response = await request('/admin/refunds/stats', { token });
+    return response?.data || null;
+  },
   async getMyCheckins(token) {
     try {
       const response = await request('/checkins/me', { token });

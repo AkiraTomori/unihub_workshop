@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import AdminController from '../controllers/admin.controller.js';
 import NotificationController from '../controllers/notification.controller.js';
+import RefundController from '../controllers/refund.controller.js';
 import { requireRole, verifyToken } from '../middlewares/auth.mw.js';
 import { createWorkshopSchema, updateWorkshopSchema, validateRequest } from '../validations/workshop.validation.js';
 
@@ -53,5 +54,10 @@ router.get('/notifications', (req, res) => NotificationController.listAdmin(req,
 router.get('/notifications/failed', (req, res) => NotificationController.getFailedNotificationsList(req, res));
 
 router.post('/notifications/replay', (req, res) => NotificationController.replayFailedNotifications(req, res));
+
+// Refund Management
+router.get('/refunds', (req, res) => RefundController.listAllRefunds(req, res));
+
+router.get('/refunds/stats', (req, res) => RefundController.getRefundStats(req, res));
 
 export default router;

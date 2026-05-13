@@ -150,8 +150,69 @@ export class Registration {
     return { notificationId };
   }
 
-  static async listByWorkshop(workshopId) {
-    return db('registrations as r')
+  static async enqueueWorkshopCancellation(trx, {
+    userId,
+    recipient,
+    subject,
+    content,
+    registrationId,
+    workshopId,
+    workshopTitle,
+    workshopStartTime,
+    workshopSpeaker,
+    workshopRoomName,
+    reason,
+  }) {
+    const notificationId = randomUUID();
+    const occurredAt = new Date().toISOString();
+
+    await trx('outbox_events').insert({
+      id: randomUUID(),
+      aggregate_id: registrationId,
+      event_type: 'NotificationRequested',
+      payload: {
+        event_id: randomUUID(),
+        event_type: 'NotificationRequested',
+        occurred_at: occurredAt,
+        aggregate_id: notificationId,
+        correlation_id: registrationId,
+        trace_id: `registration-${registrationId}`,
+        payload: {
+          notification_id: notificationId,
+          user_id: userId,
+          channel: 'EMAIL',
+          template: 'workshop-cancelled',
+          subject,
+          recipient,
+          content,
+          registration_id: registrationId,
+          workshop_id: workshopId,
+          workshop_title: workshopTitle,
+          workshop_start_time: workshopStartTime || null,
+          workshop_speaker: workshopSpeaker || null,
+          workshop_room_name: workshopRoomName || null,
+          reason: reason || null,
+        },
+      },
+      status: 'PENDING',
+    });
+
+    await trx('notifications').insert({
+      id: notificationId,
+      user_id: userId,
+      channel: 'EMAIL',
+      template: 'workshop-cancelled',
+      subject,
+      content,
+      recipient,
+      status: 'PENDING',
+    });
+
+    return { notificationId };
+  }
+
+  static async listByWorkshop(workshopId, trx = db) {
+    return trx('registrations as r')
       .join('users as u', 'r.user_id', 'u.id')
       .leftJoin('payments as p', 'r.id', 'p.registration_id')
       .where('r.workshop_id', workshopId)
