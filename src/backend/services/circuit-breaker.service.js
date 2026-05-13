@@ -4,10 +4,9 @@ import { config } from '../config/config.js';
 const PREFIX = 'circuit:payment';
 const STATE_KEY = `${PREFIX}:state`;
 const OPENED_AT_KEY = `${PREFIX}:opened_at`;
-const EVENTS_KEY = `${PREFIX}:events`;
 const PROBES_KEY = `${PREFIX}:half_open_probes`;
 
-const { failureThreshold, windowMs, openDurationMs, halfOpenMaxProbes } = config.circuitBreaker;
+const { openDurationMs, halfOpenMaxProbes } = config.circuitBreaker;
 
 async function getClient() {
   return getRedisClient();
@@ -24,6 +23,13 @@ export class CircuitBreakerService {
     return state || 'CLOSED';
   }
 
+  static async openCircuit() {
+    const redis = await getClient();
+    await redis.set(STATE_KEY, 'OPEN');
+    await redis.set(OPENED_AT_KEY, String(now()));
+    await redis.del(PROBES_KEY);
+  }
+
   static async canRequest() {
     const redis = await getClient();
     const state = (await redis.get(STATE_KEY)) || 'CLOSED';
@@ -35,7 +41,7 @@ export class CircuitBreakerService {
     if (state === 'OPEN') {
       const openedAt = Number(await redis.get(OPENED_AT_KEY) || 0);
       if (now() - openedAt < openDurationMs) {
-        return { allowed: false, state: 'OPEN' };
+        return { allowed: false, state: 'OPEN', retryAfterMs: openDurationMs - (now() - openedAt) };
       }
 
       await redis.set(STATE_KEY, 'HALF_OPEN');
@@ -58,42 +64,20 @@ export class CircuitBreakerService {
 
   static async recordSuccess() {
     const redis = await getClient();
-    await redis.set(STATE_KEY, 'CLOSED');
-    await redis.del(OPENED_AT_KEY);
-    await redis.del(PROBES_KEY);
-    await redis.del(EVENTS_KEY);
-  }
-
-  static async recordRequestOutcome(success) {
-    const redis = await getClient();
-    const timestamp = now();
-    const label = success ? `success:${timestamp}` : `failure:${timestamp}`;
-
-    await redis.zAdd(EVENTS_KEY, [{ score: timestamp, value: label }]);
-    await redis.zRemRangeByScore(EVENTS_KEY, 0, timestamp - windowMs);
-
     const state = (await redis.get(STATE_KEY)) || 'CLOSED';
 
-    if (success) {
-      if (state === 'HALF_OPEN') {
-        await this.recordSuccess();
-      }
-      return;
-    }
-
     if (state === 'HALF_OPEN') {
-      await redis.set(STATE_KEY, 'OPEN');
-      await redis.set(OPENED_AT_KEY, String(timestamp));
+      await redis.set(STATE_KEY, 'CLOSED');
+      await redis.del(OPENED_AT_KEY);
       await redis.del(PROBES_KEY);
-      return;
     }
+  }
 
-    const events = await redis.zRangeByScore(EVENTS_KEY, timestamp - windowMs, timestamp);
-    const failures = events.filter((entry) => entry.startsWith('failure:')).length;
+  static async recordFailure() {
+    const state = await this.getState();
 
-    if (events.length >= 2 && failures / events.length > failureThreshold) {
-      await redis.set(STATE_KEY, 'OPEN');
-      await redis.set(OPENED_AT_KEY, String(timestamp));
+    if (state === 'HALF_OPEN' || state === 'CLOSED') {
+      await this.openCircuit();
     }
   }
 }

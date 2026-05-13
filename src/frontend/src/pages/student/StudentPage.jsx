@@ -221,6 +221,14 @@ export default function StudentPage({
               </button>
               <button
                 type="button"
+                onClick={() => processPayment("5xx")}
+                disabled={processingPayment}
+                className="rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-800 disabled:opacity-40"
+              >
+                Simulate 5xx
+              </button>
+              <button
+                type="button"
                 onClick={() => setPaymentContext(null)}
                 disabled={processingPayment}
                 className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 disabled:opacity-40"

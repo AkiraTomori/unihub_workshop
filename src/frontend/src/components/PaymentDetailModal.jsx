@@ -2,6 +2,41 @@ import React, { useState, useEffect } from 'react';
 import { Badge, Spinner } from './ui';
 import { api } from '../services/api';
 
+const PAYMENT_STATUS_DETAILS = {
+  PENDING: {
+    tone: 'yellow',
+    dotClass: 'bg-yellow-400',
+    panelClass: 'border-yellow-200 bg-yellow-50/70',
+    title: 'Pending payment',
+    description: 'This payment has not been completed yet. Your registration is still waiting for checkout.',
+    action: 'Go back to My Payments and use Pay Now to retry.',
+  },
+  SUCCESS: {
+    tone: 'green',
+    dotClass: 'bg-green-400',
+    panelClass: 'border-green-200 bg-green-50/70',
+    title: 'Payment successful',
+    description: 'This payment was confirmed and your workshop registration is active.',
+    action: 'Keep your QR code for check-in when the workshop starts.',
+  },
+  FAILED: {
+    tone: 'red',
+    dotClass: 'bg-red-400',
+    panelClass: 'border-red-200 bg-red-50/70',
+    title: 'Payment failed',
+    description: 'This payment attempt did not go through and you were not charged.',
+    action: 'You can start a new checkout from My Payments if the workshop is still open.',
+  },
+  REFUNDED: {
+    tone: 'blue',
+    dotClass: 'bg-blue-400',
+    panelClass: 'border-blue-200 bg-blue-50/70',
+    title: 'Payment refunded',
+    description: 'This payment was refunded, usually after a workshop cancellation.',
+    action: 'Check the Refunds tab for refund details if you need them.',
+  },
+};
+
 export default function PaymentDetailModal({ paymentId, token, onClose, onToast }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,10 +71,13 @@ export default function PaymentDetailModal({ paymentId, token, onClose, onToast 
     return map[status] || 'gray';
   };
 
+  const currentStatus = data
+    ? PAYMENT_STATUS_DETAILS[data.status] || PAYMENT_STATUS_DETAILS.PENDING
+    : null;
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-        {/* Header */}
         <div className="sticky top-0 bg-blue-50 border-b border-blue-200 p-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-blue-950">Payment Detail</h2>
           <button
@@ -50,7 +88,6 @@ export default function PaymentDetailModal({ paymentId, token, onClose, onToast 
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-4 space-y-4">
           {loading ? (
             <div className="flex justify-center items-center py-12">
@@ -63,7 +100,6 @@ export default function PaymentDetailModal({ paymentId, token, onClose, onToast 
             </div>
           ) : data ? (
             <>
-              {/* Payment Info */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-blue-950">Payment Information</h3>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -93,7 +129,6 @@ export default function PaymentDetailModal({ paymentId, token, onClose, onToast 
                 </div>
               </div>
 
-              {/* Transaction Details */}
               <div className="space-y-3 border-t border-blue-200 pt-4">
                 <h3 className="font-semibold text-blue-950">Transaction Details</h3>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -114,9 +149,8 @@ export default function PaymentDetailModal({ paymentId, token, onClose, onToast 
                 </div>
               </div>
 
-              {/* Refund Details (if refunded) */}
               {data.status === 'REFUNDED' && (
-                <div className="space-y-3 border-t border-emerald-200 bg-emerald-50/40 -mx-4 -mb-4 px-4 py-4">
+                <div className="space-y-3 border-t border-emerald-200 bg-emerald-50/40 -mx-4 px-4 py-4">
                   <h3 className="font-semibold text-emerald-950">Refund Information</h3>
                   <div className="grid md:grid-cols-2 gap-4">
                     {data.refund_reason && (
@@ -137,35 +171,30 @@ export default function PaymentDetailModal({ paymentId, token, onClose, onToast 
                 </div>
               )}
 
-              {/* Status Legend */}
-              <div className="space-y-3 border-t border-blue-200 pt-4">
-                <h3 className="font-semibold text-blue-950 text-sm">Payment Status Legend</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-yellow-400"></div>
-                    <span>PENDING</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-green-400"></div>
-                    <span>SUCCESS</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-red-400"></div>
-                    <span>FAILED</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-blue-400"></div>
-                    <span>REFUNDED</span>
+              {currentStatus ? (
+                <div className="space-y-3 border-t border-blue-200 pt-4">
+                  <h3 className="font-semibold text-blue-950 text-sm">Payment Status</h3>
+                  <div className={`rounded-xl border p-4 ${currentStatus.panelClass}`}>
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-1 h-3 w-3 shrink-0 rounded ${currentStatus.dotClass}`} />
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge tone={currentStatus.tone}>{data.status}</Badge>
+                          <span className="text-sm font-semibold text-blue-950">{currentStatus.title}</span>
+                        </div>
+                        <p className="text-sm text-blue-900">{currentStatus.description}</p>
+                        <p className="text-xs text-blue-800">{currentStatus.action}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : null}
             </>
           ) : (
             <div className="text-center text-gray-500 py-8">No data</div>
           )}
         </div>
 
-        {/* Footer */}
         <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-4 flex justify-end gap-2">
           <button
             onClick={onClose}

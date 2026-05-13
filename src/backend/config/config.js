@@ -67,13 +67,16 @@ export const config = {
   payment: {
     idempotencyTtlSeconds: Number(process.env.PAYMENT_IDEMPOTENCY_TTL_SECONDS || 86400),
     webhookSecret: process.env.WEBHOOK_SECRET || '',
+    retryBaseMs: Number(process.env.PAYMENT_RETRY_BASE_MS || 100),
+    retryDelaysMs: (process.env.PAYMENT_RETRY_DELAYS_MS || '100,200,400')
+      .split(',')
+      .map((value) => Number(value.trim()))
+      .filter((value) => Number.isFinite(value) && value > 0),
   },
 
   // Circuit breaker (payment gateway)
   circuitBreaker: {
-    failureThreshold: Number(process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD || 0.5),
-    windowMs: Number(process.env.CIRCUIT_BREAKER_WINDOW_MS || 60000),
-    openDurationMs: Number(process.env.CIRCUIT_BREAKER_OPEN_DURATION_MS || 300000),
+    openDurationMs: Number(process.env.CIRCUIT_BREAKER_OPEN_DURATION_MS || 30000),
     halfOpenMaxProbes: Number(process.env.CIRCUIT_BREAKER_HALF_OPEN_PROBES || 3),
   },
 

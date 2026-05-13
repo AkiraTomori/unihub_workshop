@@ -3,7 +3,7 @@ import db from '../config/db.js';
 import Payment from '../models/payment.model.js';
 import Registration from '../models/registration.model.js';
 import CircuitBreakerService from './circuit-breaker.service.js';
-import IdempotencyService from './idempotency.service.js';
+import IdempotencyService, { isTerminalPaymentResult } from './idempotency.service.js';
 import PaymentGatewayService from './payment-gateway.service.js';
 
 function buildRegistrationEmail({ fullName, workshopTitle, workshopStartTime, registrationId, workshopSpeaker, workshopRoomName, qrCode }) {
@@ -73,36 +73,47 @@ async function confirmPaidRegistration(trx, registration, paymentId) {
 export class PaymentService {
   static async checkout({ userId, registrationId, idempotencyKey, simulateResult = 'success' }) {
     const cached = await IdempotencyService.get(idempotencyKey);
-    if (cached && cached.status !== 'PROCESSING') {
+    if (cached && isTerminalPaymentResult(cached)) {
       return buildCheckoutResponse({ ...cached, idempotencyState: 'REPLAYED' });
+    }
+
+    if (cached && !isTerminalPaymentResult(cached)) {
+      await IdempotencyService.release(idempotencyKey);
     }
 
     const reservation = await IdempotencyService.reserve(idempotencyKey);
     if (!reservation.acquired) {
-      if (reservation.cached && reservation.cached.status !== 'PROCESSING') {
+      if (reservation.cached && isTerminalPaymentResult(reservation.cached)) {
         return buildCheckoutResponse({ ...reservation.cached, idempotencyState: 'REPLAYED' });
       }
-      return buildCheckoutResponse({
-        status: 'PENDING_PAYMENT',
-        message: 'Payment is already being processed. Please wait and retry shortly.',
-        idempotencyState: 'IN_PROGRESS',
-      });
+
+      if (reservation.cached?.status === 'PROCESSING') {
+        return buildCheckoutResponse({
+          status: 'PENDING_PAYMENT',
+          message: 'Payment is already being processed. Please wait a moment and retry.',
+          idempotencyState: 'IN_PROGRESS',
+        });
+      }
+
+      await IdempotencyService.release(idempotencyKey);
+      await IdempotencyService.reserve(idempotencyKey);
     }
 
     const circuit = await CircuitBreakerService.canRequest();
     if (!circuit.allowed) {
-      const pendingResult = buildCheckoutResponse({
+      await IdempotencyService.release(idempotencyKey);
+      const retryAfterSec = circuit.retryAfterMs ? Math.ceil(circuit.retryAfterMs / 1000) : 30;
+      return buildCheckoutResponse({
         status: 'PENDING_PAYMENT',
-        message: 'Payment gateway is temporarily unavailable. Your seat remains reserved. Please try again later.',
+        message: `Payment gateway is temporarily unavailable. Retry in about ${retryAfterSec}s. Your seat remains reserved.`,
         circuitState: circuit.state,
         idempotencyState: 'CIRCUIT_OPEN',
       });
-      await IdempotencyService.save(idempotencyKey, pendingResult);
-      return pendingResult;
     }
 
     const registration = await Payment.findRegistrationForCheckout(userId, registrationId);
     if (!registration) {
+      await IdempotencyService.release(idempotencyKey);
       throw { status: 404, message: 'Registration not found' };
     }
 
@@ -115,7 +126,7 @@ export class PaymentService {
         paymentId: existingByKey.id,
         idempotencyState: 'REPLAYED',
       });
-      await IdempotencyService.save(idempotencyKey, replay);
+      await IdempotencyService.saveSuccess(idempotencyKey, replay);
       return replay;
     }
 
@@ -125,13 +136,15 @@ export class PaymentService {
 
     let gatewayResult;
     try {
-      gatewayResult = await PaymentGatewayService.charge({
+      gatewayResult = await PaymentGatewayService.chargeWithRetry({
         amount: registration.price,
         simulateResult,
       });
-      await CircuitBreakerService.recordRequestOutcome(true);
+      await CircuitBreakerService.recordSuccess();
     } catch (error) {
-      await CircuitBreakerService.recordRequestOutcome(false);
+      if (error.retriableExhausted) {
+        await CircuitBreakerService.recordFailure();
+      }
 
       const pendingPayment = await db.transaction(async (trx) => {
         let payment = await Payment.findByRegistrationId(registration.id, trx);
@@ -161,7 +174,7 @@ export class PaymentService {
         circuitState: await CircuitBreakerService.getState(),
         idempotencyState: 'PENDING',
       });
-      await IdempotencyService.save(idempotencyKey, pendingResult);
+      await IdempotencyService.release(idempotencyKey);
       return pendingResult;
     }
 
@@ -212,7 +225,7 @@ export class PaymentService {
       });
     });
 
-    await IdempotencyService.save(idempotencyKey, result);
+    await IdempotencyService.saveSuccess(idempotencyKey, result);
     return result;
   }
 
@@ -297,7 +310,7 @@ export class PaymentService {
         paymentId: payment.id,
         idempotencyState: 'WEBHOOK',
       });
-      await IdempotencyService.save(idempotencyKey, checkoutResult);
+      await IdempotencyService.saveSuccess(idempotencyKey, checkoutResult);
 
       return {
         accepted: true,

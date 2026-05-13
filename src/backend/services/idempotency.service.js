@@ -2,9 +2,14 @@ import { getRedisClient } from '../config/redis.js';
 import { config } from '../config/config.js';
 
 const PREFIX = 'payment:idempotency:';
+const IN_FLIGHT_TTL_SECONDS = 60;
 
 function buildKey(idempotencyKey) {
   return `${PREFIX}${idempotencyKey}`;
+}
+
+export function isTerminalPaymentResult(result) {
+  return result?.status === 'CONFIRMED';
 }
 
 export class IdempotencyService {
@@ -27,7 +32,7 @@ export class IdempotencyService {
 
     const acquired = await redis.set(key, placeholder, {
       NX: true,
-      EX: config.payment.idempotencyTtlSeconds,
+      EX: IN_FLIGHT_TTL_SECONDS,
     });
 
     if (acquired) {
@@ -38,11 +43,20 @@ export class IdempotencyService {
     return { acquired: false, cached };
   }
 
-  static async save(idempotencyKey, result) {
+  static async saveSuccess(idempotencyKey, result) {
+    if (!isTerminalPaymentResult(result)) {
+      return;
+    }
+
     const redis = await getRedisClient();
     await redis.set(buildKey(idempotencyKey), JSON.stringify(result), {
       EX: config.payment.idempotencyTtlSeconds,
     });
+  }
+
+  static async release(idempotencyKey) {
+    const redis = await getRedisClient();
+    await redis.del(buildKey(idempotencyKey));
   }
 }
 
