@@ -390,7 +390,7 @@ This document defines the core HTTP APIs used by the frontend and mobile app. It
 
 | Method | Endpoint | Purpose | Roles | Returns |
 |---|---|---|---|---|
-| POST | `/payments` | Create a payment session | Student | `payment_id`, `status`, `redirect_url`, `provider`, `idempotency_state` |
+| POST | `/payments/checkout` | Create a payment session | Student | `payment_id`, `status`, `redirect_url`, `provider`, `idempotency_state` |
 | POST | `/payments/webhook` | Receive payment gateway callback | Public, signed webhook | `accepted`, `processed`, and optional `payment_id` |
 | GET | `/payments/me` | View my payment history | Student | `items[]` with `payment_id`, `registration_id`, `amount`, `provider`, `status`, `transaction_id` (status includes `REFUNDED`) |
 | GET | `/payments/{id}` | View one payment | Student, Admin | `payment_id`, `registration_id`, `amount`, `provider`, `status`, `transaction_id`, `idempotency_key` |
