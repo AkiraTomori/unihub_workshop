@@ -49,7 +49,32 @@ export const config = {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: Number(process.env.REDIS_PORT || 6379),
-    password: process.env.REDIS_PASSWORD || null,
+    password:
+      process.env.REDIS_PASSWORD
+      || (process.env.NODE_ENV !== 'production' ? 'redis_local_dev_password' : ''),
+    get url() {
+      const host = this.host;
+      const port = this.port;
+      const password = this.password;
+      if (password) {
+        return `redis://:${encodeURIComponent(password)}@${host}:${port}`;
+      }
+      return `redis://${host}:${port}`;
+    },
+  },
+
+  // Payment
+  payment: {
+    idempotencyTtlSeconds: Number(process.env.PAYMENT_IDEMPOTENCY_TTL_SECONDS || 86400),
+    webhookSecret: process.env.WEBHOOK_SECRET || '',
+  },
+
+  // Circuit breaker (payment gateway)
+  circuitBreaker: {
+    failureThreshold: Number(process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD || 0.5),
+    windowMs: Number(process.env.CIRCUIT_BREAKER_WINDOW_MS || 60000),
+    openDurationMs: Number(process.env.CIRCUIT_BREAKER_OPEN_DURATION_MS || 300000),
+    halfOpenMaxProbes: Number(process.env.CIRCUIT_BREAKER_HALF_OPEN_PROBES || 3),
   },
 
   // Supabase Storage

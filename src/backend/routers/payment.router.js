@@ -5,18 +5,17 @@ import { verifyToken } from '../middlewares/auth.mw.js';
 
 const router = express.Router();
 
-// Payment endpoints
+router.post('/webhook', (req, res) => PaymentController.webhook(req, res));
+
 router.post('/checkout', verifyToken, (req, res) => PaymentController.checkout(req, res));
+router.post('/', verifyToken, (req, res) => PaymentController.checkout(req, res));
 
 router.get('/me', verifyToken, (req, res) => PaymentController.listMine(req, res));
 
-router.get('/:id', verifyToken, (req, res) => PaymentController.getById(req, res));
-
-// Refund endpoints
+router.get('/refunds/me', verifyToken, (req, res) => RefundController.listMyRefunds(req, res));
+router.get('/refund/:paymentId/status', verifyToken, (req, res) => RefundController.getRefundStatus(req, res));
 router.post('/refund/:paymentId', verifyToken, (req, res) => RefundController.refundPayment(req, res));
 
-router.get('/refunds/me', verifyToken, (req, res) => RefundController.listMyRefunds(req, res));
-
-router.get('/refund/:paymentId/status', verifyToken, (req, res) => RefundController.getRefundStatus(req, res));
+router.get('/:id', verifyToken, (req, res) => PaymentController.getById(req, res));
 
 export default router;

@@ -81,7 +81,7 @@ export default function StudentPage({
         setPaymentContext({
           registrationId: registration.id,
           workshop,
-          idempotencyKey: `${registration.id}-${Date.now()}`,
+          idempotencyKey: crypto.randomUUID(),
           paymentStatus: "PENDING_PAYMENT",
           message: "Registration reserved. Please complete payment to receive QR."
         });
