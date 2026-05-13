@@ -100,13 +100,14 @@ export class Refund {
       '',
       'If you have any questions, please contact our support team.',
     ].join('\n');
+    const notificationId = randomUUID();
 
     await trx('outbox_events').insert({
       id: randomUUID(),
       aggregate_id: userId,
       event_type: 'NotificationRequested',
       payload: {
-        notification_id: randomUUID(),
+        notification_id: notificationId,
         user_id: userId,
         channel: 'EMAIL',
         template: 'refund-confirmed',
@@ -116,6 +117,20 @@ export class Refund {
         reference_type: 'REFUND',
         reference_id: null,
       },
+      status: 'PENDING',
+      created_at: trx.fn.now(),
+      updated_at: trx.fn.now(),
+    });
+
+    // Insert into notifications table so worker can update status later
+    await trx('notifications').insert({
+      id: notificationId,
+      user_id: userId,
+      channel: 'EMAIL',
+      template: 'refund-confirmed',
+      subject,
+      content,
+      recipient,
       status: 'PENDING',
       created_at: trx.fn.now(),
       updated_at: trx.fn.now(),
