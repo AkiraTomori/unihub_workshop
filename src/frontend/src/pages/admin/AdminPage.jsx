@@ -25,6 +25,7 @@ export default function AdminPage({
   const [analytics, setAnalytics] = useState({ activeCount: 0, seatsLeft: 0, aiCompleted: 0 });
   const [csvLog, setCsvLog] = useState({ ran_at: "-", processed_rows: 0, invalid_rows: 0, upsert_conflicts: 0 });
   const [cancellingWorkshopId, setCancellingWorkshopId] = useState("");
+  const [confirmingCancelWorkshop, setConfirmingCancelWorkshop] = useState(null);
   const [selectedStatuses, setSelectedStatuses] = useState(["DRAFT", "PUBLISHED"]);
   const [activeTab, setActiveTab] = useState("workshops");
 
@@ -181,7 +182,7 @@ export default function AdminPage({
                     </button>
                     <button
                       type="button"
-                      onClick={() => cancelWorkshop(w.id)}
+                      onClick={() => setConfirmingCancelWorkshop(w)}
                       disabled={cancellingWorkshopId === w.id}
                       className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-3 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-50 disabled:opacity-50"
                     >
@@ -264,6 +265,42 @@ export default function AdminPage({
         </div>
       </div>
       )}
+
+      {/* Confirm Cancel Modal */}
+      {confirmingCancelWorkshop ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 px-4">
+          <div className="w-full max-w-md rounded-xl border border-blue-100 bg-white p-5 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-blue-950">Confirm Cancel</h3>
+            <p className="text-sm text-blue-900">
+              Are you sure you want to cancel the workshop <span className="font-semibold">{confirmingCancelWorkshop.title}</span>?
+            </p>
+            <p className="mt-1 text-xs text-blue-700">
+              {confirmingCancelWorkshop.date} • {confirmingCancelWorkshop.room} • {confirmingCancelWorkshop.fee === 0 ? "Free" : `${confirmingCancelWorkshop.fee.toLocaleString()} VND`}
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmingCancelWorkshop(null)}
+                className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900"
+              >
+                No, keep it
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!confirmingCancelWorkshop) return;
+                  const id = confirmingCancelWorkshop.id;
+                  setConfirmingCancelWorkshop(null);
+                  await cancelWorkshop(id);
+                }}
+                className="rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white"
+              >
+                Yes, cancel workshop
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Documents Tab */}
       {activeTab === "documents" && (
