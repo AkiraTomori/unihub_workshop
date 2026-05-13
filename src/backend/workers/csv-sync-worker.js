@@ -1,8 +1,3 @@
-/**
- * Scheduled CSV Sync Worker
- * Runs nightly to import student data from legacy system CSV file
- * Run: node workers/csv-sync-worker.js
- */
 import CsvSyncService from '../services/csv-sync.service.js';
 import db from '../config/db.js';
 import { config } from '../config/config.js';
