@@ -114,6 +114,29 @@ export default function PaymentDetailModal({ paymentId, token, onClose, onToast 
                 </div>
               </div>
 
+              {/* Refund Details (if refunded) */}
+              {data.status === 'REFUNDED' && (
+                <div className="space-y-3 border-t border-emerald-200 bg-emerald-50/40 -mx-4 -mb-4 px-4 py-4">
+                  <h3 className="font-semibold text-emerald-950">Refund Information</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {data.refund_reason && (
+                      <div className="bg-emerald-50 p-3 rounded-lg">
+                        <p className="text-xs text-emerald-600 font-medium">Refund Reason</p>
+                        <p className="text-sm text-emerald-900">{data.refund_reason}</p>
+                      </div>
+                    )}
+                    {data.refund_processed_at && (
+                      <div className="bg-emerald-50 p-3 rounded-lg">
+                        <p className="text-xs text-emerald-600 font-medium">Refund Processed</p>
+                        <p className="text-sm text-emerald-900">
+                          {new Date(data.refund_processed_at).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Status Legend */}
               <div className="space-y-3 border-t border-blue-200 pt-4">
                 <h3 className="font-semibold text-blue-950 text-sm">Payment Status Legend</h3>

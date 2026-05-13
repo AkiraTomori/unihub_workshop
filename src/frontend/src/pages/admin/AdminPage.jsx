@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Activity, BarChart3, CalendarDays, FileText, FolderSync, PencilLine, Trash2, Users } from "lucide-react";
+import { Activity, BarChart3, CalendarDays, FileText, FolderSync, PencilLine, Trash2, Users, RotateCcw } from "lucide-react";
 import { Badge, Card, Spinner } from "../../components/ui";
 import { api } from "../../services/api";
 import WorkshopFilter from "../../components/WorkshopFilter";
@@ -8,6 +8,7 @@ import DocumentManager from "../../components/DocumentManager";
 import AdminCheckinStats from "../../components/AdminCheckinStats";
 import AdminCsvSyncManager from "../../components/AdminCsvSyncManager";
 import AdminAuditLogs from "../../components/AdminAuditLogs";
+import AdminRefundsPage from "./AdminRefundsPage";
 
 export default function AdminPage({
   workshops,
@@ -32,6 +33,7 @@ export default function AdminPage({
     { id: "documents", label: "Documents", icon: FileText },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
     { id: "csv-sync", label: "CSV Sync", icon: FolderSync },
+    { id: "refunds", label: "Refunds", icon: RotateCcw },
     { id: "audit", label: "Audit", icon: Activity },
     { id: "deleted", label: "Deleted", icon: Trash2 }
   ];
@@ -349,6 +351,11 @@ export default function AdminPage({
       {/* CSV Sync Tab */}
       {activeTab === "csv-sync" && (
       <AdminCsvSyncManager token={token} onToast={onToast} />
+      )}
+
+      {/* Refunds Tab */}
+      {activeTab === "refunds" && (
+      <AdminRefundsPage token={token} onToast={onToast} />
       )}
 
       {/* Audit Tab */}

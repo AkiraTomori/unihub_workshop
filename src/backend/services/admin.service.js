@@ -3,10 +3,13 @@ import Workshop from '../models/workshop.model.js';
 import Admin from '../models/admin.model.js';
 import Checkin from '../models/checkin.model.js';
 import Registration from '../models/registration.model.js';
+import Refund from '../models/refund.model.js';
+import RefundService from './refund.service.js';
 import CsvSyncService from './csv-sync.service.js';
 import storage from '../config/storage.js';
 import { config } from '../config/config.js';
 import { publishEvent } from '../config/rabbitmq.js';
+import db from '../config/db.js';
 
 function parseDateFallback(dateString) {
   const parsed = new Date(dateString);
@@ -195,20 +198,72 @@ export class AdminService {
   }
 
   static async cancelWorkshop(workshopId, actorId) {
-    const workshop = await Workshop.findById(workshopId);
-    if (!workshop) throw { status: 404, message: 'Workshop not found' };
+    return db.transaction(async (trx) => {
+      const workshop = await Workshop.findById(workshopId);
+      if (!workshop) throw { status: 404, message: 'Workshop not found' };
 
-    await Workshop.softDelete(workshopId);
-    await Admin.insertAuditLog({
-      actorId,
-      entityId: workshopId,
-      action: 'CANCEL_WORKSHOP',
-      entityType: 'workshops',
-      oldPayload: { status: workshop.status, deleted_at: workshop.deleted_at || null },
-      newPayload: { status: 'CANCELLED', deleted_at: new Date().toISOString() },
+      // Soft delete workshop
+      await Workshop.softDelete(workshopId);
+
+      // Refund all paid registrations
+      const refundSummary = await RefundService.refundWorkshopPaymentsWithinTrx(
+        trx,
+        workshopId,
+        'Workshop canceled by admin'
+      );
+
+      // Cancel remaining registrations (including unpaid/free) and notify all registrants
+      const registrations = await Registration.listByWorkshop(workshopId, trx);
+      for (const reg of registrations) {
+        // Ensure registration is cancelled
+        if (reg.status !== 'CANCELLED') {
+          await Refund.cancelRegistration(trx, reg.id);
+
+          // If registration had no successful payment, decrement seat count now
+          if (reg.payment_status !== 'SUCCESS') {
+            await Refund.decrementWorkshopRegisteredCount(trx, workshopId);
+          }
+
+          // Enqueue cancellation notification for this registrant
+          const subject = `Workshop cancelled: ${workshop.title}`;
+          const content = `Hello ${reg.full_name || 'participant'},\n\nWe regret to inform you that the workshop "${workshop.title}" scheduled on ${workshop.start_time ? new Date(workshop.start_time).toLocaleString() : 'TBD'} has been cancelled by the organiser.\n\nIf you have a paid registration, a refund has been or will be processed. For questions, contact support.`;
+
+          await Registration.enqueueWorkshopCancellation(trx, {
+            userId: reg.user_id,
+            recipient: reg.email,
+            subject,
+            content,
+            registrationId: reg.id,
+            workshopId: workshopId,
+            workshopTitle: workshop.title,
+            workshopStartTime: workshop.start_time,
+            workshopSpeaker: workshop.speaker,
+            workshopRoomName: workshop.room_name,
+            reason: 'Workshop canceled by admin',
+          });
+        }
+      }
+
+      // Audit log with refund summary
+      await Admin.insertAuditLog({
+        actorId,
+        entityId: workshopId,
+        action: 'CANCEL_WORKSHOP',
+        entityType: 'workshops',
+        oldPayload: { status: workshop.status, deleted_at: workshop.deleted_at || null },
+        newPayload: {
+          status: 'CANCELLED',
+          deleted_at: new Date().toISOString(),
+          refund_summary: refundSummary,
+        },
+      });
+
+      return {
+        id: workshopId,
+        status: 'CANCELLED',
+        refundSummary,
+      };
     });
-
-    return { id: workshopId, status: 'CANCELLED' };
   }
 
   static async listDeletedWorkshops() {
