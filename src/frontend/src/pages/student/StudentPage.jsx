@@ -101,6 +101,21 @@ export default function StudentPage({
     }
   }
 
+  function openPendingPayment(workshop) {
+    const existingRegistration = registrationByWorkshopId.get(workshop.id);
+    if (!existingRegistration || existingRegistration.status !== "PENDING_PAYMENT") return;
+
+    setPaymentContext({
+      registrationId: existingRegistration.id,
+      workshop,
+      idempotencyKey: crypto.randomUUID(),
+      paymentStatus: "PENDING_PAYMENT",
+      message: "Registration reserved. Please complete payment to receive QR."
+    });
+    setNotice(`Continue payment for ${workshop.title}.`);
+    onToast?.(`Continue payment for ${workshop.title}.`, "info");
+  }
+
   function requestRegisterConfirmation(workshop) {
     setConfirmingWorkshop(workshop);
   }
@@ -152,28 +167,28 @@ export default function StudentPage({
   return (
     <div className="space-y-4">
       {confirmingWorkshop ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 px-4">
-          <div className="w-full max-w-md rounded-xl border border-blue-100 bg-white p-5 shadow-2xl">
-            <h3 className="mb-2 text-lg font-semibold text-blue-950">Confirm Registration</h3>
-            <p className="text-sm text-blue-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 px-3 py-3 sm:px-4">
+          <div className="w-full max-w-[calc(100vw-1.5rem)] max-h-[calc(100vh-1.5rem)] overflow-y-auto rounded-xl border border-blue-100 bg-white p-4 shadow-2xl sm:max-w-lg sm:p-5">
+            <h3 className="mb-2 text-base font-semibold text-blue-950 sm:text-lg">Confirm Registration</h3>
+            <p className="text-sm text-blue-900 sm:text-base">
               Are you sure you want to register for <span className="font-semibold">{confirmingWorkshop.title}</span>?
             </p>
             <p className="mt-1 text-xs text-blue-700">
               {confirmingWorkshop.date} • {confirmingWorkshop.room} •{" "}
               {confirmingWorkshop.fee === 0 ? "Free" : `${confirmingWorkshop.fee.toLocaleString()} VND`}
             </p>
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-4 grid gap-2 sm:flex sm:justify-end">
               <button
                 type="button"
                 onClick={() => setConfirmingWorkshop(null)}
-                className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900"
+                className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 sm:w-auto"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmRegister}
-                className="rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white"
+                className="w-full rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white sm:w-auto"
               >
                 Yes, Register
               </button>
@@ -182,25 +197,25 @@ export default function StudentPage({
         </div>
       ) : null}
       {paymentContext ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 px-4">
-          <div className="w-full max-w-md rounded-xl border border-blue-100 bg-white p-5 shadow-2xl">
-            <h3 className="mb-2 text-lg font-semibold text-blue-950">Complete Payment</h3>
-            <p className="text-sm text-blue-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 px-3 py-3 sm:px-4">
+          <div className="w-full max-w-[calc(100vw-1.5rem)] max-h-[calc(100vh-1.5rem)] overflow-y-auto rounded-xl border border-blue-100 bg-white p-4 shadow-2xl sm:max-w-lg sm:p-5">
+            <h3 className="mb-2 text-base font-semibold text-blue-950 sm:text-lg">Complete Payment</h3>
+            <p className="text-sm text-blue-900 sm:text-base">
               Workshop: <span className="font-semibold">{paymentContext.workshop.title}</span>
             </p>
             <p className="mt-1 text-xs text-blue-700">
               Fee: {paymentContext.workshop.fee === 0 ? "Free" : `${paymentContext.workshop.fee.toLocaleString()} VND`}
             </p>
-            <p className="mt-2 text-sm text-blue-800">
+            <p className="mt-2 text-sm text-blue-800 sm:text-base">
               Status: <span className="font-semibold">{paymentContext.paymentStatus}</span>
             </p>
             <p className="mt-1 text-xs text-blue-700">{paymentContext.message}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
               <button
                 type="button"
                 onClick={() => processPayment("success")}
                 disabled={processingPayment}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white disabled:bg-blue-400"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white disabled:bg-blue-400 sm:w-auto"
               >
                 {processingPayment ? (
                   <>
@@ -215,7 +230,7 @@ export default function StudentPage({
                 type="button"
                 onClick={() => processPayment("timeout")}
                 disabled={processingPayment}
-                className="rounded-lg border border-amber-300 px-3 py-2 text-sm font-medium text-amber-800 disabled:opacity-40"
+                className="w-full rounded-lg border border-amber-300 px-3 py-2 text-sm font-medium text-amber-800 disabled:opacity-40 sm:w-auto"
               >
                 Simulate Timeout
               </button>
@@ -223,18 +238,19 @@ export default function StudentPage({
                 type="button"
                 onClick={() => processPayment("5xx")}
                 disabled={processingPayment}
-                className="rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-800 disabled:opacity-40"
+                className="w-full rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-800 disabled:opacity-40 sm:w-auto"
               >
                 Simulate 5xx
               </button>
-              <button
-                type="button"
-                onClick={() => setPaymentContext(null)}
-                disabled={processingPayment}
-                className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 disabled:opacity-40"
-              >
-                Close
-              </button>
+              {!processingPayment ? (
+                <button
+                  type="button"
+                  onClick={() => setPaymentContext(null)}
+                  className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 sm:w-auto"
+                >
+                  Close
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -352,9 +368,16 @@ export default function StudentPage({
                           <span className="inline-flex items-center gap-1"><ExternalLink size={14} /> Details</span>
                         </Link>
                         <button
-                          onClick={() => requestRegisterConfirmation(w)}
+                          onClick={() => {
+                            const existingRegistration = registrationByWorkshopId.get(w.id);
+                            if (existingRegistration?.status === "PENDING_PAYMENT") {
+                              openPendingPayment(w);
+                              return;
+                            }
+                            requestRegisterConfirmation(w);
+                          }}
                           className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"
-                          disabled={w.seatsLeft <= 0 || registeredWorkshopIds.has(w.id) || submittingWorkshopId === w.id}
+                          disabled={w.seatsLeft <= 0 || (registeredWorkshopIds.has(w.id) && registrationByWorkshopId.get(w.id)?.status !== "PENDING_PAYMENT") || submittingWorkshopId === w.id}
                         >
                           {submittingWorkshopId === w.id
                             ? (
@@ -366,7 +389,7 @@ export default function StudentPage({
                             : w.seatsLeft <= 0
                             ? "Sold Out"
                             : registrationByWorkshopId.get(w.id)?.status === "PENDING_PAYMENT"
-                            ? "Pending Payment"
+                            ? "Continue Payment"
                             : registeredWorkshopIds.has(w.id)
                             ? "Registered"
                             : "Register"}
