@@ -103,6 +103,7 @@ export default function AuthPanel({ onLogin, onRegister, loading, isAuthenticate
                 Login
               </span>
             </button>
+            {/*
             <button
               type="button"
               onClick={() => switchMode("register")}
@@ -114,6 +115,7 @@ export default function AuthPanel({ onLogin, onRegister, loading, isAuthenticate
                 Register
               </span>
             </button>
+            */}
           </div>
           {isSwitchingMode ? (
             <div className="grid place-items-center rounded-lg border border-blue-100 bg-blue-50/40 py-10 text-sm text-blue-800">
