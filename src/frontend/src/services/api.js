@@ -188,6 +188,30 @@ export const api = {
     const response = await request('/admin/rooms', { token });
     return Array.isArray(response?.data) ? response.data : [];
   },
+  async createRoom(token, payload) {
+    const response = await request('/admin/rooms', { token, method: 'POST', body: payload });
+    return response?.data || null;
+  },
+  async updateRoom(token, roomId, payload) {
+    const response = await request(`/admin/rooms/${roomId}`, { token, method: 'PUT', body: payload });
+    return response?.data || null;
+  },
+  async deleteRoom(token, roomId) {
+    const response = await request(`/admin/rooms/${roomId}`, { token, method: 'DELETE' });
+    return response?.data || null;
+  },
+  async restoreRoom(token, roomId) {
+    const response = await request(`/admin/rooms/${roomId}/restore`, { token, method: 'PATCH' });
+    return response?.data || null;
+  },
+  async getDeletedRooms(token) {
+    const response = await request('/admin/rooms/deleted', { token });
+    return Array.isArray(response?.data) ? response.data : [];
+  },
+  async getRoomWorkshops(token, roomId) {
+    const response = await request(`/admin/rooms/${roomId}/workshops`, { token });
+    return Array.isArray(response?.data) ? response.data : [];
+  },
   registerWorkshop(token, workshopId) {
     return request("/registrations", { token, method: "POST", body: { workshopId } });
   },

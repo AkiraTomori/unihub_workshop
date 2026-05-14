@@ -426,6 +426,103 @@ export class AdminService {
     return Admin.listRooms();
   }
 
+  static async createRoom(actorId, payload) {
+    const room = await Admin.createRoom({ name: payload.name, base_capacity: payload.base_capacity, map_image_url: payload.map_image_url });
+    await Admin.insertAuditLog({
+      actorId,
+      entityId: room.id,
+      action: 'CREATE_ROOM',
+      entityType: 'rooms',
+      oldPayload: null,
+      newPayload: room,
+    });
+    return room;
+  }
+
+  static async updateRoom(actorId, roomId, payload) {
+    const current = await Admin.getRoomById(roomId);
+    if (!current) throw { status: 404, message: 'Room not found' };
+
+    const updated = await Admin.updateRoom(roomId, {
+      name: payload.name,
+      base_capacity: payload.base_capacity,
+      map_image_url: payload.map_image_url,
+    });
+
+    await Admin.insertAuditLog({
+      actorId,
+      entityId: roomId,
+      action: 'UPDATE_ROOM',
+      entityType: 'rooms',
+      oldPayload: current,
+      newPayload: updated,
+    });
+
+    return updated;
+  }
+
+  static async deleteRoom(actorId, roomId) {
+    const current = await Admin.getRoomById(roomId);
+    if (!current) throw { status: 404, message: 'Room not found' };
+
+    // Check if room is used in active workshops
+    const workshopsCount = await db('workshops')
+      .where('room_id', roomId)
+      .where('status', 'PUBLISHED')
+      .whereNull('deleted_at')
+      .count({ total: '*' })
+      .first();
+
+    if (workshopsCount?.total > 0) {
+      throw { status: 400, message: 'Cannot delete room with active workshops' };
+    }
+
+    const deleted = await Admin.deleteRoom(roomId);
+
+    await Admin.insertAuditLog({
+      actorId,
+      entityId: roomId,
+      action: 'DELETE_ROOM',
+      entityType: 'rooms',
+      oldPayload: current,
+      newPayload: { ...current, is_active: false },
+    });
+
+    return deleted;
+  }
+
+  static async restoreRoom(actorId, roomId) {
+    // Check if room exists (including inactive)
+    const room = await db('rooms').where({ id: roomId }).select('id', 'name', 'is_active').first();
+    if (!room) throw { status: 404, message: 'Room not found' };
+    if (room.is_active) throw { status: 400, message: 'Room is already active' };
+
+    const restored = await Admin.restoreRoom(roomId);
+
+    await Admin.insertAuditLog({
+      actorId,
+      entityId: roomId,
+      action: 'RESTORE_ROOM',
+      entityType: 'rooms',
+      oldPayload: { ...room, is_active: false },
+      newPayload: restored,
+    });
+
+    return restored;
+  }
+
+  static async listDeletedRooms() {
+    return Admin.listDeletedRooms();
+  }
+
+  static async getRoomWorkshops(roomId) {
+    const workshops = await db('workshops')
+      .where({ room_id: roomId })
+      .select('id', 'title', 'status', 'room_id', 'created_at')
+      .orderBy('created_at', 'desc');
+    return workshops || [];
+  }
+
   static async updateDocumentStatus(documentId, status, aiSummary = null) {
     return Admin.updateDocumentStatus(documentId, status, aiSummary);
   }

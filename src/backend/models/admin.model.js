@@ -20,11 +20,56 @@ export class Admin {
   }
 
   static async listRooms() {
-    return db('rooms').select('id', 'name', 'base_capacity').orderBy('name', 'asc');
+    return db('rooms').select('id', 'name', 'base_capacity').where('is_active', true).orderBy('name', 'asc');
   }
 
   static async getRoomById(roomId) {
-    return db('rooms').select('id', 'name', 'base_capacity').where({ id: roomId }).first();
+    return db('rooms').select('id', 'name', 'base_capacity').where({ id: roomId }).where('is_active', true).first();
+  }
+
+  static async createRoom({ id = null, name, base_capacity = 0, map_image_url = null }) {
+    const payload = {
+      id: id || randomUUID(),
+      name,
+      base_capacity: Number(base_capacity || 0),
+      map_image_url: map_image_url || null,
+    };
+
+    const [{ id: createdId, name: createdName, base_capacity: createdCapacity }] = await db('rooms')
+      .insert(payload)
+      .returning(['id', 'name', 'base_capacity']);
+
+    return { id: createdId, name: createdName, base_capacity: createdCapacity };
+  }
+
+  static async updateRoom(roomId, { name, base_capacity, map_image_url }) {
+    const payload = {};
+    if (name !== undefined) payload.name = name;
+    if (base_capacity !== undefined) payload.base_capacity = Number(base_capacity);
+    if (map_image_url !== undefined) payload.map_image_url = map_image_url;
+
+    const updated = await db('rooms').where({ id: roomId }).update(payload).returning(['id', 'name', 'base_capacity']);
+    if (!updated || updated.length === 0) return null;
+    const row = updated[0];
+    return { id: row.id, name: row.name, base_capacity: row.base_capacity };
+  }
+
+  static async deleteRoom(roomId) {
+    const updated = await db('rooms').where({ id: roomId }).update({ is_active: false }).returning(['id', 'name', 'is_active']);
+    if (!updated || updated.length === 0) return null;
+    const row = updated[0];
+    return { id: row.id, name: row.name, is_active: row.is_active };
+  }
+
+  static async restoreRoom(roomId) {
+    const updated = await db('rooms').where({ id: roomId }).update({ is_active: true }).returning(['id', 'name', 'is_active']);
+    if (!updated || updated.length === 0) return null;
+    const row = updated[0];
+    return { id: row.id, name: row.name, is_active: row.is_active };
+  }
+
+  static async listDeletedRooms() {
+    return db('rooms').select('id', 'name', 'base_capacity').where('is_active', false).orderBy('updated_at', 'desc');
   }
 
   static async upsertDocument(workshopId, fileName) {

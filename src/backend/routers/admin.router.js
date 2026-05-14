@@ -5,6 +5,7 @@ import NotificationController from '../controllers/notification.controller.js';
 import RefundController from '../controllers/refund.controller.js';
 import { requireRole, verifyToken } from '../middlewares/auth.mw.js';
 import { createWorkshopSchema, updateWorkshopSchema, validateRequest } from '../validations/workshop.validation.js';
+import { createRoomSchema, updateRoomSchema, validateRequest as validateRoom } from '../validations/room.validation.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 52428800 } });
@@ -12,6 +13,18 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 524
 router.use(verifyToken, requireRole(['ADMIN']));
 
 router.get('/rooms', (req, res) => AdminController.listRooms(req, res));
+
+router.post('/rooms', validateRoom(createRoomSchema), (req, res) => AdminController.createRoom(req, res));
+
+router.put('/rooms/:id', validateRoom(updateRoomSchema), (req, res) => AdminController.updateRoom(req, res));
+
+router.delete('/rooms/:id', (req, res) => AdminController.deleteRoom(req, res));
+
+router.patch('/rooms/:id/restore', (req, res) => AdminController.restoreRoom(req, res));
+
+router.get('/rooms/deleted', (req, res) => AdminController.listDeletedRooms(req, res));
+
+router.get('/rooms/:roomId/workshops', (req, res) => AdminController.getRoomWorkshops(req, res));
 
 router.get('/workshops/deleted', (req, res) => AdminController.listDeletedWorkshops(req, res));
 
@@ -55,7 +68,6 @@ router.get('/notifications/failed', (req, res) => NotificationController.getFail
 
 router.post('/notifications/replay', (req, res) => NotificationController.replayFailedNotifications(req, res));
 
-// Refund Management
 router.get('/refunds', (req, res) => RefundController.listAllRefunds(req, res));
 
 router.get('/refunds/stats', (req, res) => RefundController.getRefundStats(req, res));

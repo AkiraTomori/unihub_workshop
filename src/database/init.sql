@@ -69,6 +69,7 @@ CREATE TABLE rooms (
     name VARCHAR(100) NOT NULL UNIQUE,
     map_image_url VARCHAR(255),
     base_capacity INT NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE, -- Soft delete flag
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

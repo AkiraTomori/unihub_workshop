@@ -10,6 +10,7 @@ import AdminWorkshopParticipantsPage from "./pages/admin/AdminWorkshopParticipan
 import AdminDeletedWorkshopsPage from "./pages/admin/AdminDeletedWorkshopsPage";
 import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
 import AdminFailedNotificationsPage from "./pages/admin/AdminFailedNotificationsPage";
+import AdminRoomsPage from "./pages/admin/AdminRoomsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import StudentPage from "./pages/student/StudentPage";
 import StudentNotificationsPage from "./pages/student/StudentNotificationsPage";
@@ -218,6 +219,13 @@ export default function App() {
           element={protectedGuard(
             "ADMIN",
             <AdminFailedNotificationsPage token={token} onToast={pushToast} />
+          )}
+        />
+        <Route
+          path="/admin/rooms"
+          element={protectedGuard(
+            "ADMIN",
+            <AdminRoomsPage token={token} onToast={pushToast} />
           )}
         />
         <Route

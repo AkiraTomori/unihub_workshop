@@ -6,13 +6,15 @@ export class Workshop {
       .join('rooms as r', 'w.room_id', 'r.id')
       .leftJoin('documents as d', 'w.id', 'd.workshop_id')
       .whereNull('w.deleted_at')
-      .andWhere('w.status', 'PUBLISHED');
+      .where('w.status', 'PUBLISHED')
+      .where('r.is_active', true);
   }
 
   static buildAdminQuery() {
     return db('workshops as w')
       .join('rooms as r', 'w.room_id', 'r.id')
-      .leftJoin('documents as d', 'w.id', 'd.workshop_id');
+      .leftJoin('documents as d', 'w.id', 'd.workshop_id')
+      .where('r.is_active', true);
   }
 
   static buildAdminActiveQuery() {

@@ -77,3 +77,34 @@ export function ToastContainer({ toasts, onDismiss }) {
     </div>
   );
 }
+
+export function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel, isLoading = false }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-950/45 backdrop-blur-[2px]">
+      <div className="rounded-2xl bg-white/95 p-6 shadow-2xl shadow-slate-900/30 w-full max-w-sm">
+        <h3 className="text-lg font-semibold text-slate-950 mb-2">{title}</h3>
+        <p className="text-sm text-slate-700 mb-6">{message}</p>
+        <div className="flex gap-3 justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:bg-red-400"
+          >
+            {isLoading ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

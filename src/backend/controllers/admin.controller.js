@@ -76,6 +76,67 @@ export class AdminController {
     }
   }
 
+  static async createRoom(req, res) {
+    try {
+      // Validation already applied by validateRoom middleware
+      const payload = req.validatedData || req.body;
+      const result = await AdminService.createRoom(req.user.id, payload);
+      return res.status(201).json({ status: 'SUCCESS', message: 'Room created successfully', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to create room' });
+    }
+  }
+
+  static async updateRoom(req, res) {
+    try {
+      const payload = req.body;
+      const roomId = req.params.id;
+      const result = await AdminService.updateRoom(req.user.id, roomId, payload);
+      return res.status(200).json({ status: 'SUCCESS', message: 'Room updated successfully', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to update room' });
+    }
+  }
+
+  static async deleteRoom(req, res) {
+    try {
+      const roomId = req.params.id;
+      const result = await AdminService.deleteRoom(req.user.id, roomId);
+      return res.status(200).json({ status: 'SUCCESS', message: 'Room deleted successfully', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to delete room' });
+    }
+  }
+
+  static async restoreRoom(req, res) {
+    try {
+      const roomId = req.params.id;
+      const result = await AdminService.restoreRoom(req.user.id, roomId);
+      return res.status(200).json({ status: 'SUCCESS', message: 'Room restored successfully', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to restore room' });
+    }
+  }
+
+  static async listDeletedRooms(req, res) {
+    try {
+      const result = await AdminService.listDeletedRooms();
+      return res.status(200).json({ status: 'SUCCESS', message: 'Deleted rooms retrieved successfully', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to fetch deleted rooms' });
+    }
+  }
+
+  static async getRoomWorkshops(req, res) {
+    try {
+      const { roomId } = req.params;
+      const result = await AdminService.getRoomWorkshops(roomId);
+      return res.status(200).json({ status: 'SUCCESS', message: 'Room workshops retrieved successfully', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to fetch room workshops' });
+    }
+  }
+
   static async uploadDocument(req, res) {
     try {
       const { workshopId } = req.body;
