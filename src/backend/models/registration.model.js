@@ -24,6 +24,18 @@ export class Registration {
     await trx('registrations').insert(registrationData);
   }
 
+  static async countActivePendingPaymentRegistrations(workshopId, trx = db) {
+    const row = await trx('registrations')
+      .where({ workshop_id: workshopId, status: 'PENDING_PAYMENT' })
+      .where((query) => {
+        query.whereNull('expires_at').orWhere('expires_at', '>', trx.fn.now());
+      })
+      .count('* as total')
+      .first();
+
+    return Number(row?.total || 0);
+  }
+
   static async incrementWorkshopRegisteredCount(workshopId, trx = db) {
     await trx('workshops').where({ id: workshopId }).increment('registered_count', 1);
   }
