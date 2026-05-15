@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import db from '../config/db.js';
 import Registration from '../models/registration.model.js';
+import SeatReservationService from './seat-reservation.service.js';
 
 function buildRegistrationEmail({ fullName, workshopTitle, workshopStartTime, registrationId, workshopSpeaker, workshopRoomName, qrCode }) {
   const startText = workshopStartTime ? new Date(workshopStartTime).toLocaleString() : 'N/A';
@@ -25,85 +26,120 @@ function generateQrCode() {
 
 export class RegistrationService {
   static async createRegistration(userId, workshopId) {
-    return db.transaction(async (trx) => {
-      const workshop = await Registration.findWorkshopById(workshopId, trx);
+    let seatReserved = false;
 
-      if (!workshop || workshop.status !== 'PUBLISHED') {
-        throw { status: 404, message: 'Workshop not found or unavailable' };
-      }
+    try {
+      const result = await db.transaction(async (trx) => {
+        const workshop = await Registration.findWorkshopById(workshopId, trx);
 
-      const activeRegistration = await Registration.findActiveRegistration(userId, workshopId, trx);
+        if (!workshop || workshop.status !== 'PUBLISHED') {
+          throw { status: 404, message: 'Workshop not found or unavailable' };
+        }
 
-      if (activeRegistration) {
+        const activeRegistration = await Registration.findActiveRegistration(userId, workshopId, trx);
+
+        if (activeRegistration) {
+          return {
+            id: activeRegistration.id,
+            qr_code: activeRegistration.qr_code,
+            requires_payment: activeRegistration.status !== 'CONFIRMED' && Number(workshop.price) > 0,
+            status: activeRegistration.status,
+          };
+        }
+
+        const pendingCount = await Registration.countActivePendingPaymentRegistrations(workshopId, trx);
+
+        let reservation;
+        try {
+          reservation = await SeatReservationService.reserveSeat({
+            workshopId,
+            capacity: workshop.capacity,
+            registeredCount: workshop.registered_count,
+            pendingCount,
+          });
+        } catch (error) {
+          throw {
+            status: 503,
+            message: 'Seat reservation service is temporarily unavailable. Please retry.',
+            code: 'SEAT_RESERVATION_UNAVAILABLE',
+          };
+        }
+
+        if (!reservation.reserved) {
+          throw { status: 400, message: 'Workshop is sold out' };
+        }
+
+        seatReserved = true;
+
+        const isPaidWorkshop = Number(workshop.price) > 0;
+        const registrationId = randomUUID();
+        const qrCode = generateQrCode();
+        const expiresAt = isPaidWorkshop ? trx.raw(`NOW() + INTERVAL '15 minutes'`) : null;
+        const status = isPaidWorkshop ? 'PENDING_PAYMENT' : 'CONFIRMED';
+        const student = await trx('users').where({ id: userId }).select('email', 'full_name').first();
+        const room = workshop.room_id ? await Registration.findRoomById(workshop.room_id, trx) : null;
+
+        if (!student?.email) {
+          throw { status: 404, message: 'Student email not found' };
+        }
+
+        await Registration.createRegistration(trx, {
+          id: registrationId,
+          user_id: userId,
+          workshop_id: workshopId,
+          status,
+          expires_at: expiresAt,
+          qr_code: qrCode,
+        });
+
+        if (!isPaidWorkshop) {
+          await Registration.incrementWorkshopRegisteredCount(workshopId, trx);
+          const subject = `Registration confirmed: ${workshop.title}`;
+          const content = buildRegistrationEmail({
+            fullName: student.full_name,
+            workshopTitle: workshop.title,
+            workshopStartTime: workshop.start_time,
+            registrationId,
+            workshopSpeaker: workshop.speaker,
+            workshopRoomName: room?.name,
+            qrCode,
+          });
+
+          await Registration.enqueueRegistrationSideEffects(trx, {
+            userId,
+            recipient: student.email,
+            subject,
+            content,
+            registrationId,
+            workshopId,
+            workshopTitle: workshop.title,
+            workshopStartTime: workshop.start_time,
+            workshopSpeaker: workshop.speaker,
+            workshopRoomName: room?.name,
+            qrCode,
+          });
+        }
+
         return {
-          id: activeRegistration.id,
-          qr_code: activeRegistration.qr_code,
-          requires_payment: activeRegistration.status !== 'CONFIRMED' && Number(workshop.price) > 0,
-          status: activeRegistration.status,
+          id: registrationId,
+          qr_code: qrCode,
+          requires_payment: isPaidWorkshop,
+          status,
         };
-      }
-
-      const seatsLeft = Number(workshop.capacity || 0) - Number(workshop.registered_count || 0);
-      if (seatsLeft <= 0) {
-        throw { status: 400, message: 'Workshop is sold out' };
-      }
-
-      const isPaidWorkshop = Number(workshop.price) > 0;
-      const registrationId = randomUUID();
-      const qrCode = generateQrCode();
-      const expiresAt = isPaidWorkshop ? trx.raw(`NOW() + INTERVAL '15 minutes'`) : null;
-      const status = isPaidWorkshop ? 'PENDING_PAYMENT' : 'CONFIRMED';
-      const student = await trx('users').where({ id: userId }).select('email', 'full_name').first();
-      const room = workshop.room_id ? await Registration.findRoomById(workshop.room_id, trx) : null;
-
-      if (!student?.email) {
-        throw { status: 404, message: 'Student email not found' };
-      }
-
-      await Registration.createRegistration(trx, {
-        id: registrationId,
-        user_id: userId,
-        workshop_id: workshopId,
-        status,
-        expires_at: expiresAt,
-        qr_code: qrCode,
       });
 
-      if (!isPaidWorkshop) {
-        await Registration.incrementWorkshopRegisteredCount(workshopId, trx);
-        const subject = `Registration confirmed: ${workshop.title}`;
-        const content = buildRegistrationEmail({
-          fullName: student.full_name,
-          workshopTitle: workshop.title,
-          workshopStartTime: workshop.start_time,
-          registrationId,
-          workshopSpeaker: workshop.speaker,
-          workshopRoomName: room?.name,
-          qrCode,
-        });
-
-        await Registration.enqueueRegistrationSideEffects(trx, {
-          userId,
-          recipient: student.email,
-          subject,
-          content,
-          registrationId,
-          workshopId,
-          workshopTitle: workshop.title,
-          workshopStartTime: workshop.start_time,
-          workshopSpeaker: workshop.speaker,
-          workshopRoomName: room?.name,
-          qrCode,
-        });
+      return result;
+    } catch (error) {
+      if (seatReserved) {
+        try {
+          await SeatReservationService.releaseSeat(workshopId);
+        } catch (releaseError) {
+          console.error('[RegistrationService] Failed to release reserved seat:', releaseError.message);
+        }
       }
 
-      return {
-        id: registrationId,
-        qr_code: qrCode,
-        requires_payment: isPaidWorkshop,
-        status,
-      };
-    });
+      throw error;
+    }
   }
 
   static async listMyRegistrations(userId) {
