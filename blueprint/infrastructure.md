@@ -119,6 +119,20 @@ services:
          timeout: 5s
          retries: 5
 
+   nginx:
+      image: nginx:stable-alpine
+      container_name: unihub_nginx
+      ports:
+         - "8080:8080"
+      restart: unless-stopped
+      depends_on:
+         - redis
+         - rabbitmq
+      extra_hosts:
+         - "host.docker.internal:host-gateway"
+      volumes:
+         - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
 volumes:
    redis_data:
    rabbitmq_data:
