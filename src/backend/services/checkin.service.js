@@ -43,27 +43,52 @@ export class CheckinService {
     const results = [];
 
     for (const item of items) {
-      if (!item?.offlineSyncId) continue;
+      const offlineSyncId = item?.offlineSyncId || item?.offline_sync_id;
+      const qrCode = item?.qrCode || item?.qr_code;
+      const registrationId = item?.registrationId || item?.registration_id || null;
+      const deviceId = item?.deviceId || item?.device_id || 'web-checker';
+      const checkedInAt = item?.checkedInAt || item?.scanned_at || null;
 
-      const existing = await Checkin.findByOfflineSyncId(item.offlineSyncId);
+      if (!offlineSyncId) continue;
+
+      const existing = await Checkin.findByOfflineSyncId(offlineSyncId);
       if (existing) {
-        results.push({ offlineSyncId: item.offlineSyncId, status: 'DUPLICATE' });
+        results.push({ offlineSyncId, status: 'DUPLICATE' });
         continue;
       }
 
-      if (!item.registrationId) {
-        results.push({ offlineSyncId: item.offlineSyncId, status: 'SKIPPED' });
+      let registration = null;
+      if (registrationId) {
+        registration = { id: registrationId };
+      } else if (qrCode) {
+        registration = await Checkin.findRegistrationByQr(qrCode);
+      }
+
+      if (!registration) {
+        results.push({ offlineSyncId, status: 'SKIPPED' });
+        continue;
+      }
+
+      const existingRegistrationCheckin = await Checkin.findByRegistrationId(registration.id);
+
+      if (existingRegistrationCheckin) {
+        await Checkin.updateByRegistrationId(registration.id, {
+          device_id: deviceId,
+          scanned_at: checkedInAt ? new Date(checkedInAt) : new Date(),
+          offline_sync_id: offlineSyncId,
+        });
+        results.push({ offlineSyncId, status: 'UPDATED' });
         continue;
       }
 
       await Checkin.createCheckin(db, {
         id: randomUUID(),
-        registration_id: item.registrationId,
-        device_id: 'web-checker',
-        scanned_at: item.checkedInAt ? new Date(item.checkedInAt) : new Date(),
-        offline_sync_id: item.offlineSyncId,
+        registration_id: registration.id,
+        device_id: deviceId,
+        scanned_at: checkedInAt ? new Date(checkedInAt) : new Date(),
+        offline_sync_id: offlineSyncId,
       });
-      results.push({ offlineSyncId: item.offlineSyncId, status: 'SYNCED' });
+      results.push({ offlineSyncId, status: 'SYNCED' });
     }
 
     return results;

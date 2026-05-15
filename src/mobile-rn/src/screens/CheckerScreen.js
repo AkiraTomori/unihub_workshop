@@ -12,7 +12,7 @@ export default function CheckerScreen() {
     setQrCode,
     queue,
     online,
-    setOnline,
+    pendingCount,
     status,
     permission,
     scannerVisible,
@@ -31,11 +31,9 @@ export default function CheckerScreen() {
         {permission && !permission.granted ? (
           <Text style={styles.meta}>Camera permission denied. Please enable camera access in settings.</Text>
         ) : null}
-        <Text style={styles.meta}>Mode: {online ? "Online" : "Offline"}</Text>
+        <Text style={styles.meta}>Network: {online ? "Online" : "Offline"}</Text>
+        <Text style={styles.meta}>Pending offline scans: {pendingCount}</Text>
         <View style={styles.row}>
-          <TouchableOpacity style={styles.navBtn} onPress={() => setOnline((v) => !v)}>
-            <Text>Switch {online ? "Offline" : "Online"}</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.navBtn} onPress={onSync}>
             <Text>Sync Queue</Text>
           </TouchableOpacity>
@@ -55,11 +53,19 @@ export default function CheckerScreen() {
       </SectionCard>
 
       <SectionCard>
-        <Text style={styles.title}>Offline Queue ({queue.length})</Text>
+        <Text style={styles.title}>Local SQLite Queue ({queue.length})</Text>
         <FlatList
           data={queue}
           keyExtractor={(item) => item.offlineSyncId}
-          renderItem={({ item }) => <Text style={styles.meta}>• {item.offlineSyncId}</Text>}
+          ListEmptyComponent={<Text style={styles.meta}>No local scan records yet.</Text>}
+          renderItem={({ item }) => (
+            <View style={styles.queueItem}>
+              <Text style={styles.queueTitle}>{item.qrCode}</Text>
+              <Text style={styles.meta}>
+                {item.status} • {item.offlineSyncId}
+              </Text>
+            </View>
+          )}
         />
       </SectionCard>
 
@@ -98,6 +104,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#eef4ff", padding: 10 },
   title: { fontWeight: "700", color: "#1e3a8a", fontSize: 16, marginBottom: 8 },
   meta: { color: "#334155", marginBottom: 6, fontSize: 12 },
+  queueItem: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#dbeafe" },
+  queueTitle: { color: "#0f172a", fontWeight: "600", marginBottom: 2, fontSize: 13 },
   row: { flexDirection: "row", gap: 8, marginBottom: 8 },
   navBtn: { flex: 1, borderWidth: 1, borderColor: "#93c5fd", backgroundColor: "#fff", borderRadius: 8, padding: 10, alignItems: "center" },
   input: { borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 8, padding: 10, backgroundColor: "#fff", marginBottom: 8 },

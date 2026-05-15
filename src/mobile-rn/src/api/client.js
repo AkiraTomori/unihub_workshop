@@ -20,14 +20,25 @@ export async function apiRequest(path, { method = "GET", body, token } = {}) {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined
+    });
+  } catch (error) {
+    const networkError = new Error(error.message || "Network request failed");
+    networkError.isNetworkError = true;
+    throw networkError;
+  }
+
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message || "Request failed");
+    const requestError = new Error(data.message || "Request failed");
+    requestError.status = response.status;
+    requestError.response = data;
+    throw requestError;
   }
   return data;
 }

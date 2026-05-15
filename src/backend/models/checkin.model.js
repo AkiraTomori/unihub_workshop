@@ -23,6 +23,12 @@ export class Checkin {
     await trx('checkins').insert(checkinData);
   }
 
+  static async updateByRegistrationId(registrationId, checkinData, trx = db) {
+    await trx('checkins')
+      .where({ registration_id: registrationId })
+      .update(checkinData);
+  }
+
   static async listByUser(userId, trx = db) {
     return trx('checkins as c')
       .join('registrations as r', 'c.registration_id', 'r.id')
