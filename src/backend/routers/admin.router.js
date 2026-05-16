@@ -62,6 +62,8 @@ router.get('/workshops/:workshopId/registrations', (req, res) => AdminController
 
 router.get('/checkins/stats', (req, res) => AdminController.getCheckinStats(req, res));
 
+router.get('/students', (req, res) => AdminController.listStudents(req, res));
+
 router.get('/notifications', (req, res) => NotificationController.listAdmin(req, res));
 
 router.get('/notifications/failed', (req, res) => NotificationController.getFailedNotificationsList(req, res));

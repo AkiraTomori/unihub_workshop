@@ -588,6 +588,13 @@ export class AdminService {
   static async getAuditLogs(query = {}) {
     return Admin.getAuditLogs(query);
   }
+
+  static async listStudents(query = {}) {
+    return Admin.listStudents({
+      page: query.page || 1,
+      pageSize: query.pageSize || 10,
+    });
+  }
 }
 
 export default AdminService;

@@ -383,5 +383,12 @@ export const api = {
       body: selectedIds ? { notificationIds: selectedIds } : {} 
     });
     return response?.data || null;
+  },
+  async getAdminStudents(token, { page = 1, pageSize = 10 } = {}) {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('pageSize', String(pageSize));
+    const response = await request(`/admin/students?${params.toString()}`, { token });
+    return response?.data || { data: [], pagination: {} };
   }
 };

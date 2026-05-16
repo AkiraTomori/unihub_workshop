@@ -10,6 +10,7 @@ export default function AppHeader({ role, roleLabel, fullName, onLogout }) {
   if (role === "STUDENT") links.push({ to: "/student/checkins", label: "My Check-ins" });
   if (role === "ADMIN") links.push({ to: "/admin/workshops", label: "Admin Actions" });
   if (role === "ADMIN") links.push({ to: "/admin/rooms", label: "Manage Rooms", end: true });
+  if (role === "ADMIN") links.push({ to: "/admin/students", label: "Manage Students", end: true });
   if (role === "ADMIN") links.push({ to: "/admin/notifications", label: "Notifications", end: true });
   if (role === "ADMIN") links.push({ to: "/admin/notifications/failed", label: "Failed Mail", end: true });
 

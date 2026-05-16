@@ -166,36 +166,46 @@ export default function DocumentManager({ token, workshops, onToast }) {
 
           <div className="space-y-3 border-t border-blue-200 pt-4">
             <h4 className="font-medium text-blue-900">Upload PDF</h4>
-            <div className="flex flex-col gap-2 md:flex-row md:items-center">
-              <div className="flex-1">
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
-                  disabled={uploading || summarizing}
-                  className="w-full text-sm"
-                />
-              </div>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
+              <input
+                id="file-input"
+                type="file"
+                accept=".pdf"
+                onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
+                disabled={uploading || summarizing}
+                className="hidden"
+              />
+              <label
+                htmlFor="file-input"
+                className="flex-1 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 px-6 py-2.5 text-sm font-semibold text-blue-900 shadow-sm hover:shadow-md hover:from-blue-200 hover:to-blue-100 hover:border-blue-400 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="truncate">{selectedFile ? selectedFile.name : "Choose PDF file"}</span>
+              </label>
 
-              <div className="md:ml-4 md:flex-none w-full md:w-auto">
-                <button
-                  type="button"
-                  onClick={handleUpload}
-                  disabled={!selectedFile || uploading || summarizing}
-                  className="w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:bg-blue-300"
-                >
-                  {uploading ? (
-                    <>
-                      <Spinner className="h-4 w-4" />
-                      Uploading...
-                    </>
-                  ) : (
-                    "Upload PDF"
-                  )}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={!selectedFile || uploading || summarizing}
+                className="flex-1 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-900 to-blue-800 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg hover:from-blue-800 hover:to-blue-700 transition-all disabled:from-blue-300 disabled:to-blue-300 disabled:shadow-none disabled:cursor-not-allowed"
+              >
+                {uploading ? (
+                  <>
+                    <Spinner className="h-4 w-4" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                    </svg>
+                    Upload PDF
+                  </>
+                )}
+              </button>
             </div>
-            {selectedFile ? <p className="text-xs text-blue-700">Selected file: {selectedFile.name}</p> : null}
           </div>
 
           <div className="space-y-3 border-t border-blue-200 pt-4">
