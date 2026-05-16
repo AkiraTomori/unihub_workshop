@@ -187,4 +187,24 @@ VALUES
   (gen_random_uuid(), 'aaaaa111-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'f7777777-f777-4777-8777-777777777777', 'CANCEL_WORKSHOP', 'workshops', '{"status":"PUBLISHED"}', '{"status":"CANCELLED"}')
 ON CONFLICT DO NOTHING;
 
+INSERT INTO workshops (
+  id, room_id, title, description, speaker, cover_image_url, 
+  start_time, end_time, capacity, registered_count, price, status
+)
+VALUES (
+  '99999999-9999-9999-9999-999999999999', 
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 
+  '🔥 [DEMO] Sự kiện Flash Sale - Tranh chấp vé', 
+  'Sự kiện này chỉ có đúng 2 vé để demo tính năng chống Overselling bằng Redis.', 
+  'Admin', 
+  'https://images.unsplash.com/photo-1607083206968-13611e3d76db?w=800&q=80', 
+  NOW() + INTERVAL '1 days', 
+  NOW() + INTERVAL '1 days' + INTERVAL '2 hours', 
+  2,
+  0, 
+  0.00, 
+  'PUBLISHED'
+)
+ON CONFLICT DO NOTHING;
+
 COMMIT;
