@@ -555,7 +555,7 @@ export class AdminService {
   }
 
   static async triggerCsvSync(actorId) {
-    const csvPath = config.csvSync.filePath || CsvSyncService.getLatestCsvStoragePath();
+    const csvPath = CsvSyncService.getLatestCsvStoragePath(config.csvSync.filePath);
     
     try {
       const result = await CsvSyncService.runSync(csvPath);

@@ -237,8 +237,19 @@ export class CsvSyncService {
     }
   }
 
-  static getLatestCsvStoragePath() {
-    return latestUploadedCsvPath || getCsvSyncStoragePath('latest.csv');
+  static getLatestCsvStoragePath(fallbackPath = '') {
+    const latestPath = getCsvSyncStoragePath('latest.csv');
+
+    if (latestUploadedCsvPath && fs.existsSync(latestUploadedCsvPath)) {
+      return latestUploadedCsvPath;
+    }
+
+    if (fs.existsSync(latestPath)) {
+      latestUploadedCsvPath = latestPath;
+      return latestPath;
+    }
+
+    return fallbackPath || latestPath;
   }
 
   static async saveUploadedCsvFile(fileBuffer, originalFileName) {
@@ -250,15 +261,23 @@ export class CsvSyncService {
       throw new Error('Only CSV files are allowed');
     }
 
-    const storagePath = getCsvSyncStoragePath(path.basename(originalFileName));
+    const sanitizedFileName = path.basename(originalFileName).replace(/\s+/g, '_');
+    const timestampedFileName = `${Date.now()}-${sanitizedFileName}`;
+    const storagePath = getCsvSyncStoragePath(timestampedFileName);
+    const latestPath = getCsvSyncStoragePath('latest.csv');
+    const tempLatestPath = `${latestPath}.tmp`;
     const storageDir = path.dirname(storagePath);
     await fs.promises.mkdir(storageDir, { recursive: true });
     await fs.promises.writeFile(storagePath, fileBuffer);
-    latestUploadedCsvPath = storagePath;
+    // Keep a deterministic file path for workers running in a different process.
+    await fs.promises.writeFile(tempLatestPath, fileBuffer);
+    await fs.promises.rename(tempLatestPath, latestPath);
+    latestUploadedCsvPath = latestPath;
 
     return {
       fileName: originalFileName,
       storedPath: storagePath,
+      activeSyncPath: latestPath,
       size: fileBuffer.length,
     };
   }
