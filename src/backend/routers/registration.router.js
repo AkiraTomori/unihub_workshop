@@ -1,10 +1,11 @@
 import express from 'express';
 import RegistrationController from '../controllers/registration.controller.js';
 import { verifyToken } from '../middlewares/auth.mw.js';
+import { registrationRateLimiter } from '../middlewares/rateLimiter.mw.js';
 
 const router = express.Router();
 
-router.post('/', verifyToken, (req, res) => RegistrationController.create(req, res));
+router.post('/', verifyToken, registrationRateLimiter, (req, res) => RegistrationController.create(req, res));
 
 router.get('/me', verifyToken, (req, res) => RegistrationController.listMine(req, res));
 
