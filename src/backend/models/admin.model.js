@@ -243,6 +243,44 @@ export class Admin {
     await db('documents').where({ id: documentId }).update(payload);
     return { id: documentId, process_status: status };
   }
+
+  static async listStudents({ page = 1, pageSize = 10 } = {}) {
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const pageSizeNum = Math.max(1, Number(pageSize) || 10);
+    const offset = (pageNumber - 1) * pageSizeNum;
+
+    const query = db('users').where('role', 'STUDENT').where('is_active', true);
+
+    const [countResult] = await db('users')
+      .where('role', 'STUDENT')
+      .where('is_active', true)
+      .count('* as count');
+
+    const rows = await query
+      .select('id', 'student_code', 'email', 'full_name', 'created_at', 'is_active')
+      .orderBy('created_at', 'desc')
+      .offset(offset)
+      .limit(pageSizeNum);
+
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        studentCode: row.student_code || 'N/A',
+        email: row.email,
+        fullName: row.full_name,
+        createdAt: row.created_at,
+        isActive: row.is_active,
+      })),
+      pagination: {
+        page: pageNumber,
+        pageSize: pageSizeNum,
+        total: Number(countResult?.count || 0),
+        totalPages: Math.max(1, Math.ceil((countResult?.count || 0) / pageSizeNum)),
+        hasPrevPage: pageNumber > 1,
+        hasNextPage: pageNumber * pageSizeNum < (countResult?.count || 0),
+      },
+    };
+  }
 }
 
 export default Admin;

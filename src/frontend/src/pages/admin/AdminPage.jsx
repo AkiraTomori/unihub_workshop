@@ -9,6 +9,7 @@ import AdminCheckinStats from "../../components/AdminCheckinStats";
 import AdminCsvSyncManager from "../../components/AdminCsvSyncManager";
 import AdminAuditLogs from "../../components/AdminAuditLogs";
 import AdminRefundsPage from "./AdminRefundsPage";
+import AdminStudentsPage from "./AdminStudentsPage";
 
 export default function AdminPage({
   workshops,
@@ -32,6 +33,7 @@ export default function AdminPage({
   const tabs = [
     { id: "workshops", label: "Workshops", icon: CalendarDays },
     { id: "documents", label: "Documents", icon: FileText },
+    { id: "students", label: "Students", icon: Users },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
     { id: "csv-sync", label: "CSV Sync", icon: FolderSync },
     { id: "refunds", label: "Refunds", icon: RotateCcw },
@@ -315,6 +317,11 @@ export default function AdminPage({
           <DocumentManager token={token} workshops={workshops} onToast={onToast} />
         </div>
       </div>
+      )}
+
+      {/* Students Tab */}
+      {activeTab === "students" && (
+        <AdminStudentsPage token={token} onToast={onToast} />
       )}
 
       {/* Analytics Tab */}

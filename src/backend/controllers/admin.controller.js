@@ -306,6 +306,15 @@ export class AdminController {
       });
     }
   }
+
+  static async listStudents(req, res) {
+    try {
+      const result = await AdminService.listStudents(req.query || {});
+      return res.status(200).json({ status: 'SUCCESS', message: 'Students retrieved successfully', data: result });
+    } catch (error) {
+      return res.status(error.status || 500).json({ status: 'ERROR', message: error.message || 'Failed to fetch students' });
+    }
+  }
 }
 
 export default AdminController;

@@ -555,7 +555,7 @@ export class AdminService {
   }
 
   static async triggerCsvSync(actorId) {
-    const csvPath = config.csvSync.filePath || CsvSyncService.getLatestCsvStoragePath();
+    const csvPath = CsvSyncService.getLatestCsvStoragePath(config.csvSync.filePath);
     
     try {
       const result = await CsvSyncService.runSync(csvPath);
@@ -587,6 +587,13 @@ export class AdminService {
 
   static async getAuditLogs(query = {}) {
     return Admin.getAuditLogs(query);
+  }
+
+  static async listStudents(query = {}) {
+    return Admin.listStudents({
+      page: query.page || 1,
+      pageSize: query.pageSize || 10,
+    });
   }
 }
 

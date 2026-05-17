@@ -1,9 +1,3 @@
--- =================================================================================
--- UNIHUB WORKSHOP - POSTGRESQL INITIALIZATION SCRIPT
--- Architecture: Event-Driven Modular Monolith
--- Version: 1.0.0
--- =================================================================================
-
 -- 0. CLEAN UP PREVIOUS DATA (Reset DB)
 -- =================================================================================
 -- Xóa toàn bộ các bảng cũ (CASCADE để tự động xóa luôn các Khóa ngoại đang ràng buộc)
