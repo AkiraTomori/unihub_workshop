@@ -41,7 +41,7 @@ export class RegistrationService {
         if (activeRegistration) {
           return {
             id: activeRegistration.id,
-            qr_code: activeRegistration.qr_code,
+            qr_code: activeRegistration.status === 'CONFIRMED' ? activeRegistration.qr_code : null,
             requires_payment: activeRegistration.status !== 'CONFIRMED' && Number(workshop.price) > 0,
             status: activeRegistration.status,
           };
@@ -73,7 +73,7 @@ export class RegistrationService {
 
         const isPaidWorkshop = Number(workshop.price) > 0;
         const registrationId = randomUUID();
-        const qrCode = generateQrCode();
+        const qrCode = isPaidWorkshop ? null : generateQrCode();
         const expiresAt = isPaidWorkshop ? trx.raw(`NOW() + INTERVAL '15 minutes'`) : null;
         const status = isPaidWorkshop ? 'PENDING_PAYMENT' : 'CONFIRMED';
         const student = await trx('users').where({ id: userId }).select('email', 'full_name').first();
@@ -122,7 +122,7 @@ export class RegistrationService {
 
         return {
           id: registrationId,
-          qr_code: qrCode,
+          qr_code: status === 'CONFIRMED' ? qrCode : null,
           requires_payment: isPaidWorkshop,
           status,
         };

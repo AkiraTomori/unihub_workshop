@@ -13,7 +13,7 @@ export class Payment {
         'r.user_id',
         'r.workshop_id',
         'r.status as registration_status',
-        'r.qr_code',
+        trx.raw("CASE WHEN r.status = 'CONFIRMED' THEN r.qr_code ELSE NULL END as qr_code"),
         'w.title as workshop_title',
         'w.start_time as workshop_start_time',
         'w.speaker as workshop_speaker',
@@ -58,7 +58,7 @@ export class Payment {
         'p.updated_at',
         'r.workshop_id',
         'r.status as registration_status',
-        'r.qr_code',
+        trx.raw("CASE WHEN r.status = 'CONFIRMED' THEN r.qr_code ELSE NULL END as qr_code"),
         'w.title as workshop_title',
         'w.start_time as workshop_start_time',
         'w.room_id'
@@ -83,12 +83,13 @@ export class Payment {
       });
   }
 
-  static async confirmRegistration(trx, registrationId) {
+  static async confirmRegistration(trx, registrationId, qrCode) {
     await trx('registrations')
       .where({ id: registrationId })
       .update({
         status: 'CONFIRMED',
         expires_at: null,
+        ...(qrCode ? { qr_code: qrCode } : {}),
         updated_at: trx.fn.now(),
       });
   }

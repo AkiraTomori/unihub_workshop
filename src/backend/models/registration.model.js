@@ -49,7 +49,7 @@ export class Registration {
         'r.id',
         'r.workshop_id',
         'r.status',
-        'r.qr_code',
+        db.raw("CASE WHEN r.status = 'CONFIRMED' THEN r.qr_code ELSE NULL END as qr_code"),
         'w.title as workshop_title',
         'w.start_time as workshop_date'
       )
@@ -68,7 +68,7 @@ export class Registration {
         'r.workshop_id',
         'r.status',
         'r.expires_at',
-        'r.qr_code',
+        db.raw("CASE WHEN r.status = 'CONFIRMED' THEN r.qr_code ELSE NULL END as qr_code"),
         'r.created_at as registration_created_at',
         'r.updated_at as registration_updated_at',
         'w.title as workshop_title',

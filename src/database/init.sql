@@ -137,7 +137,7 @@ CREATE TABLE registrations (
     workshop_id UUID NOT NULL REFERENCES workshops(id) ON DELETE RESTRICT,
     status registration_status_enum NOT NULL DEFAULT 'PENDING_PAYMENT',
     expires_at TIMESTAMP WITH TIME ZONE, -- Thời hạn giữ vé
-    qr_code VARCHAR(100) NOT NULL UNIQUE,
+    qr_code VARCHAR(100) UNIQUE,
     offline_sync_id VARCHAR(100), -- Khóa chống trùng cho Sync Offline
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

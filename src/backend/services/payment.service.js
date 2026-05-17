@@ -34,12 +34,21 @@ function buildCheckoutResponse({ status, qrCode, message, paymentId, circuitStat
   };
 }
 
-async function confirmPaidRegistration(trx, registration, paymentId) {
+function generateQrCode() {
+  return `UNI-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+}
+
+async function confirmPaidRegistration(trx, registration) {
+  const qrCode = registration.qr_code || generateQrCode();
+
   if (registration.registration_status === 'CONFIRMED') {
-    return;
+    if (!registration.qr_code) {
+      await Payment.confirmRegistration(trx, registration.id, qrCode);
+    }
+    return qrCode;
   }
 
-  await Payment.confirmRegistration(trx, registration.id);
+  await Payment.confirmRegistration(trx, registration.id, qrCode);
   await Payment.incrementWorkshopRegisteredCount(trx, registration.workshop_id);
 
   const subject = `Registration confirmed: ${registration.workshop_title}`;
@@ -50,7 +59,7 @@ async function confirmPaidRegistration(trx, registration, paymentId) {
     registrationId: registration.id,
     workshopSpeaker: registration.workshop_speaker,
     workshopRoomName: registration.room_name,
-    qrCode: registration.qr_code,
+    qrCode,
   });
 
   await Registration.enqueueRegistrationSideEffects(trx, {
@@ -64,10 +73,10 @@ async function confirmPaidRegistration(trx, registration, paymentId) {
     workshopStartTime: registration.workshop_start_time,
     workshopSpeaker: registration.workshop_speaker,
     workshopRoomName: registration.room_name,
-    qrCode: registration.qr_code,
+    qrCode,
   });
 
-  return paymentId;
+  return qrCode;
 }
 
 export class PaymentService {
@@ -119,9 +128,17 @@ export class PaymentService {
 
     const existingByKey = await Payment.findByIdempotencyKey(idempotencyKey);
     if (existingByKey?.status === 'SUCCESS') {
+      const qrCode = await db.transaction(async (trx) => {
+        const lockedRegistration = await Payment.findRegistrationForCheckout(userId, registrationId, trx);
+        if (!lockedRegistration) {
+          throw { status: 404, message: 'Registration not found' };
+        }
+        return confirmPaidRegistration(trx, lockedRegistration);
+      });
+
       const replay = buildCheckoutResponse({
         status: 'CONFIRMED',
-        qrCode: registration.qr_code,
+        qrCode,
         message: 'Payment already confirmed',
         paymentId: existingByKey.id,
         idempotencyState: 'REPLAYED',
@@ -186,9 +203,10 @@ export class PaymentService {
 
       const duplicateKey = await Payment.findByIdempotencyKey(idempotencyKey, trx);
       if (duplicateKey?.status === 'SUCCESS') {
+        const qrCode = await confirmPaidRegistration(trx, lockedRegistration);
         return buildCheckoutResponse({
           status: 'CONFIRMED',
-          qrCode: lockedRegistration.qr_code,
+          qrCode,
           message: 'Payment already confirmed',
           paymentId: duplicateKey.id,
           idempotencyState: 'REPLAYED',
@@ -214,11 +232,11 @@ export class PaymentService {
         });
       }
 
-      await confirmPaidRegistration(trx, lockedRegistration, payment.id);
+      const qrCode = await confirmPaidRegistration(trx, lockedRegistration);
 
       return buildCheckoutResponse({
         status: 'CONFIRMED',
-        qrCode: lockedRegistration.qr_code,
+        qrCode,
         message: 'Payment successful. Registration confirmed.',
         paymentId: payment.id,
         idempotencyState: 'COMPLETED',
@@ -255,7 +273,7 @@ export class PaymentService {
             'r.user_id',
             'r.workshop_id',
             'r.status as registration_status',
-            'r.qr_code',
+            db.raw("CASE WHEN r.status = 'CONFIRMED' THEN r.qr_code ELSE NULL END as qr_code"),
             'w.title as workshop_title',
             'w.start_time as workshop_start_time',
             'w.speaker as workshop_speaker',
@@ -301,11 +319,11 @@ export class PaymentService {
         });
       }
 
-      await confirmPaidRegistration(trx, registration, payment.id);
+      const qrCode = await confirmPaidRegistration(trx, registration);
 
       const checkoutResult = buildCheckoutResponse({
         status: 'CONFIRMED',
-        qrCode: registration.qr_code,
+        qrCode,
         message: 'Payment confirmed via webhook',
         paymentId: payment.id,
         idempotencyState: 'WEBHOOK',
