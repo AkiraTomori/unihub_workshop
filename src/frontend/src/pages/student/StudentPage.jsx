@@ -242,15 +242,13 @@ export default function StudentPage({
               >
                 Simulate 5xx
               </button>
-              {!processingPayment ? (
-                <button
-                  type="button"
-                  onClick={() => setPaymentContext(null)}
-                  className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 sm:w-auto"
-                >
-                  Close
-                </button>
-              ) : null}
+              <button
+                type="button"
+                onClick={() => setPaymentContext(null)}
+                className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 sm:w-auto"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
