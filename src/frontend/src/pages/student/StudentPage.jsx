@@ -427,15 +427,6 @@ export default function StudentPage({
             </div>
           </Card>
 
-          <Card>
-            <h3 className="mb-2 inline-flex items-center gap-2 text-lg font-semibold"><CreditCard size={18} /> Payment Resilience States</h3>
-            <div className="grid gap-2 md:grid-cols-3">
-              <Badge tone="green">Circuit: Closed</Badge>
-              <Badge tone="red">Circuit: Open</Badge>
-              <Badge tone="yellow">Circuit: Half-Open</Badge>
-            </div>
-            <p className="mt-3 text-sm text-blue-800">UI includes pending payment state, retry action with idempotency key, and completed confirmation state.</p>
-          </Card>
         </div>
 
         <div className="space-y-4">
