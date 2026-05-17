@@ -32,17 +32,12 @@ Tất cả các tài liệu thiết kế, kiến trúc hệ thống, và hướn
 git clone <repo-url>
 cd unihub_workshop
 
-# Sao chép file cấu hình môi trường
-cp .env.example .env
-
-# Khởi động toàn bộ hạ tầng (PostgreSQL, Redis, RabbitMQ, Backend)
+# Khởi động toàn bộ hạ tầng (PostgreSQL, Redis, RabbitMQ)
 docker-compose up -d
 
 # Kiểm tra trạng thái dịch vụ
 docker-compose ps
 
-# Xem log backend
-docker-compose logs -f backend
 ```
 
 Chi tiết xem [infrastructure.md](blueprint/infrastructure.md).
