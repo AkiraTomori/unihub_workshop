@@ -1,3 +1,4 @@
+import ws from "ws";
 import { createClient } from "@supabase/supabase-js";
 import { config } from './config.js';
 
@@ -13,6 +14,9 @@ const supabase = supabaseUrl && supabaseServiceKey
       auth: {
         persistSession: false,
         autoRefreshToken: false,
+      },
+      realtime: {
+        transport: ws,
       },
     })
   : null;

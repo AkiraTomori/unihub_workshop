@@ -1,4 +1,128 @@
 services:
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: unihub_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: /api
+      VITE_API_PROXY_TARGET: http://nginx:8080
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./src/frontend:/app
+      - frontend_node_modules:/app/node_modules
+    command: npm run dev -- --host 0.0.0.0 --port 5173 --strictPort
+
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: unihub_backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./src/backend/.env
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      CORS_ORIGIN: http://localhost:5173,http://localhost:8080
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_local_dev_password}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-workshop_user}:${RABBITMQ_PASSWORD:-rabbitmq_local_dev_password}@rabbitmq:5672
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: npm run start
+
+  ai-summary-worker:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: unihub_ai_summary_worker
+    env_file:
+      - ./src/backend/.env
+    environment:
+      NODE_ENV: development
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_local_dev_password}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-workshop_user}:${RABBITMQ_PASSWORD:-rabbitmq_local_dev_password}@rabbitmq:5672
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    command: npm run worker:ai-summary
+
+  csv-sync-worker:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: unihub_csv_sync_worker
+    env_file:
+      - ./src/backend/.env
+    environment:
+      NODE_ENV: development
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_local_dev_password}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-workshop_user}:${RABBITMQ_PASSWORD:-rabbitmq_local_dev_password}@rabbitmq:5672
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    command: npm run worker:csv-sync
+
+  notification-worker:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: unihub_notification_worker
+    env_file:
+      - ./src/backend/.env
+    environment:
+      NODE_ENV: development
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_local_dev_password}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-workshop_user}:${RABBITMQ_PASSWORD:-rabbitmq_local_dev_password}@rabbitmq:5672
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    command: npm run worker:notification
+
+  outbox-worker:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: unihub_outbox_worker
+    env_file:
+      - ./src/backend/.env
+    environment:
+      NODE_ENV: development
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_local_dev_password}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-workshop_user}:${RABBITMQ_PASSWORD:-rabbitmq_local_dev_password}@rabbitmq:5672
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    command: npm run worker:outbox
+
   redis:
     image: redis:7-alpine
     container_name: unihub_redis
@@ -37,13 +161,18 @@ services:
       - "8080:8080"
     restart: unless-stopped
     depends_on:
-      - redis
-      - rabbitmq
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 
 volumes:
+  frontend_node_modules:
   redis_data:
   rabbitmq_data:
