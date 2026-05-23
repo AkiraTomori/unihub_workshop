@@ -2,113 +2,202 @@
 
 Tài liệu ngắn để thiết lập và chạy toàn bộ project (backend, frontend, workers, mobile) trong thư mục `src`.
 
-**Yêu cầu**
-- Node.js 18+ 
-- npm hoặc yarn
-- PostgreSQL Supabase
-- Docker & Docker Compose hoặc các dịch vụ Container khác (để chạy container Redis/RabbitMQ/nginx)
+## Tổng quan
 
-**Cấu trúc chính**
-- Backend: `backend/` — API, workers, cấu hình
-- Frontend: `frontend/` — Vite + React SPA
-- Mobile: `mobile-rn/` — React Native (Expo)
-- Database schema: `database/init.sql`
-- Docker services (Redis, RabbitMQ, nginx): `docker-compose.yaml` (project root)
+Repo này có 3 lớp chính:
 
-1) Thiết lập biến môi trường
+- `src/backend` — Express API, services, controllers, workers
+- `src/frontend` — Vite + React SPA
+- `src/mobile-rn` — React Native / Expo
 
-- Backend có file mẫu: `backend/.env.example` — sao chép thành `backend/.env` và chỉnh các giá trị sau:
-	- `DATABASE_URL` hoặc các biến DB riêng (HOST, PORT, USER, PASSWORD, DB)
-	- `REDIS_URL`/`REDIS_PASSWORD`
-	- `RABBITMQ_*` (user, password, host)
-	- Các khóa API khác (SMTP, Vertex AI, payment gateway)
+Ngoài ra, project gốc có `docker-compose.yaml` để chạy toàn bộ hạ tầng bằng container:
 
-- Lưu ý: đối với VertexAI, cần tạo một Service Account ở trên Google Cloud Platform, Account đó cần có quyền Vertex User/Agent Platform User, sau đó cần tạo key để cho hệ thống được cấp quyền truy cập vào Vertex AI (Nếu như không tìm được Vertex AI thì tìm bằng Agent Platform)
+- `frontend` trên cổng `5173`
+- `backend` trên cổng `3000`
+- `nginx` gateway trên cổng `8080`
+- `redis`, `rabbitmq`
+- 4 worker container riêng: `ai-summary-worker`, `csv-sync-worker`, `notification-worker`, `outbox-worker`
 
-- Frontend có file mẫu: `frontend/.env.example` — sao chép thành `frontend/.env` nếu cần. 
+## 1) Thiết lập biến môi trường
 
-2) Khởi tạo cơ sở dữ liệu (Postgres)
+### Backend
 
-- Tạo database (ví dụ `unihub`) và chạy file khởi tạo schema:
-- Tạo tài khoản Supabase để sử dụng PostgreSQL.
-- Sau đó lần lượt chạy file init.sql để tạo quan hệ các bảng trước, rồi mới tới data.sql để bổ sung dữ liệu vào
+Copy `src/backend/.env.example` thành `src/backend/.env` rồi chỉnh các giá trị cần thiết:
 
-3) Chạy dịch vụ phụ trợ bằng Docker Compose (Redis, RabbitMQ, nginx)
+- `DB_*` hoặc `DATABASE_URL`
+- `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
+- `RABBITMQ_URL` hoặc `RABBITMQ_*`
+- `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
+- Các key khác như SMTP, Vertex AI, payment gateway
 
-Từ thư mục gốc của project (bên ngoài `src`):
+Lưu ý với Vertex AI: cần tạo Service Account trên Google Cloud Platform, cấp quyền phù hợp như `Vertex User` hoặc `Vertex AI User`, sau đó tạo key JSON để hệ thống được cấp quyền truy cập.
+
+### Frontend
+
+Copy `src/frontend/.env.example` thành `src/frontend/.env` nếu bạn muốn override cấu hình mặc định.
+
+Mặc định frontend gọi API qua gateway:
+
+- `VITE_API_BASE_URL=/api`
+- `VITE_API_PROXY_TARGET=http://localhost:8080` khi chạy local
+
+## 2) Chạy toàn bộ project bằng Docker Compose
+
+Từ thư mục gốc của project:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-Hoặc để khởi động từng dịch vụ:
+Lệnh này sẽ khởi động:
+
+- `frontend` ở `http://localhost:5173`
+- `backend` ở `http://localhost:3000`
+- `nginx` ở `http://localhost:8080`
+- `redis`
+- `rabbitmq`
+- `ai-summary-worker`
+- `csv-sync-worker`
+- `notification-worker`
+- `outbox-worker`
+
+Nếu bạn chỉ muốn chạy gateway và hạ tầng phụ trợ, có thể chạy từng service theo nhu cầu, ví dụ:
 
 ```bash
 docker compose up -d redis rabbitmq nginx
 ```
 
-4) Chạy Backend (local)
+## 3) Các lệnh thường dùng với Docker
+
+Xem trạng thái container:
+
+```bash
+docker compose ps
+```
+
+Xem log backend:
+
+```bash
+docker compose logs -f backend
+```
+
+Xem log từng worker:
+
+```bash
+docker compose logs -f ai-summary-worker
+docker compose logs -f csv-sync-worker
+docker compose logs -f notification-worker
+docker compose logs -f outbox-worker
+```
+
+Tắt toàn bộ stack:
+
+```bash
+docker compose down
+```
+
+Tắt toàn bộ stack và xoá volume dữ liệu:
+
+```bash
+docker compose down -v
+```
+
+## 4) Chạy local từng phần nếu cần debug
+
+### Backend
 
 ```bash
 cd src/backend
 npm install
-# sao chép và cấu hình .env theo bước (1)
-npm run dev    # chạy với nodemon
-# hoặc
-npm start      # chạy production: node server.js
+npm run dev
 ```
 
-Workers (tách biệt, nếu cần chạy từng worker):
+Chạy production local:
 
 ```bash
-# ví dụ chạy mọi worker
-npm run worker:all
-
-# hoặc chạy từng worker riêng lẻ
-npm run worker:ai-summary
-npm run worker:csv-sync
-npm run worker:outbox
-npm run worker:notification
+npm start
 ```
 
-5) Chạy Frontend (local)
+Workers local:
+
+```bash
+npm run worker:all
+npm run worker:ai-summary
+npm run worker:csv-sync
+npm run worker:notification
+npm run worker:outbox
+```
+
+### Frontend
 
 ```bash
 cd src/frontend
 npm install
 npm run dev
+```
 
-# build cho production
+Build production:
+
+```bash
 npm run build
-# xem bản build cục bộ
+```
+
+Preview bản build:
+
+```bash
 npm run preview
 ```
 
-6) Chạy Mobile (React Native / Expo)
+### Mobile
 
 ```bash
 cd src/mobile-rn
 npm install
-npm run start     # expo start
-# hoặc
+npm run start
+```
+
+Hoặc:
+
+```bash
 npm run android
 npm run ios
 ```
 
-7) Useful commands & debugging
+## 5) Dữ liệu và database
 
-- Kiểm tra logs backend: `pm2`/`docker logs` hoặc terminal nơi `npm run dev` chạy
-- Kiểm tra Redis: `redis-cli -h localhost -p 6379 -a <password> ping`
-- RabbitMQ management UI: http://localhost:15672 (default credentials trong `docker-compose.yaml`)
+- Schema: `src/database/init.sql`
+- Seed data: `src/database/data.sql`
 
-8) Tệp quan trọng
-- API routes & controllers: `src/backend/controllers/`
-- Services: `src/backend/services/`
-- Workers: `src/backend/workers/`
-- DB schema: `src/database/init.sql`
-- Docker config: `docker-compose.yaml` (project root)
+Thứ tự khởi tạo đúng là:
 
-9) Troubleshooting nhanh
-- Nếu backend không kết nối DB: kiểm tra `DATABASE_URL` / `pg` connection và rằng Postgres đang chạy.
-- Lỗi Redis connection: kiểm tra `REDIS_PASSWORD` và port trong `docker compose`.
-- Nếu gặp lỗi gửi email hoặc tích hợp bên thứ ba, kiểm tra biến môi trường SMTP / API keys.
+1. Tạo database PostgreSQL / Supabase
+2. Chạy `init.sql`
+3. Chạy `data.sql` nếu muốn nạp dữ liệu mẫu
+
+## 6) Kiến trúc container
+
+- `frontend` và `backend` đều có Dockerfile riêng trong `src/frontend` và `src/backend`
+- `nginx` không cần Dockerfile riêng, chỉ mount `infra/nginx/nginx.conf`
+- 4 worker chạy độc lập trong container riêng, nhưng dùng chung image backend
+
+## 7) Troubleshooting nhanh
+
+- Nếu backend không lên, kiểm tra lại `src/backend/.env` và kết nối PostgreSQL / Supabase
+- Nếu lỗi Redis hoặc RabbitMQ, xem lại mật khẩu và port trong `docker-compose.yaml`
+- Nếu frontend không gọi được API, hãy kiểm tra `http://localhost:8080` và `VITE_API_BASE_URL`
+- Nếu container cũ bị kẹt do dependency native, chạy lại:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
+## 8) Tệp quan trọng
+
+- `docker-compose.yaml` — khai báo toàn bộ service container
+- `infra/nginx/nginx.conf` — gateway proxy và rate limit
+- `src/backend/controllers/` — API controllers
+- `src/backend/services/` — business logic
+- `src/backend/workers/` — worker entrypoints
+- `src/database/init.sql` — schema
+- `src/database/data.sql` — dữ liệu mẫu
