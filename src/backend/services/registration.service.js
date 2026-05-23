@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import db from '../config/db.js';
 import Registration from '../models/registration.model.js';
 import SeatReservationService from './seat-reservation.service.js';
+import { registrationCounter } from '../utils/metrics.js';
 
 function buildRegistrationEmail({ fullName, workshopTitle, workshopStartTime, registrationId, workshopSpeaker, workshopRoomName, qrCode }) {
   const startText = workshopStartTime ? new Date(workshopStartTime).toLocaleString() : 'N/A';
@@ -91,6 +92,8 @@ export class RegistrationService {
           expires_at: expiresAt,
           qr_code: qrCode,
         });
+
+        registrationCounter.inc({ workshop_id: workshopId });
 
         if (!isPaidWorkshop) {
           await Registration.incrementWorkshopRegisteredCount(workshopId, trx);
