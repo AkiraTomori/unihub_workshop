@@ -28,6 +28,7 @@ export default function StudentPage({
   const [confirmingWorkshop, setConfirmingWorkshop] = useState(null);
   const [paymentContext, setPaymentContext] = useState(null);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [hidePaymentCloseButton, setHidePaymentCloseButton] = useState(false);
   const registeredWorkshopIds = new Set(myRegistrations.map((item) => item.workshop_id));
   const registrationByWorkshopId = new Map(myRegistrations.map((item) => [item.workshop_id, item]));
   const sortedWorkshops = [...workshops].sort((a, b) => a.date.localeCompare(b.date));
@@ -85,6 +86,7 @@ export default function StudentPage({
           paymentStatus: "PENDING_PAYMENT",
           message: "Registration reserved. Please complete payment to receive QR."
         });
+        setHidePaymentCloseButton(false);
         setNotice(`Seat reserved for ${workshop.title}. Complete payment to confirm registration.`);
         onToast?.(`Seat reserved for ${workshop.title}.`, "info");
       } else {
@@ -112,6 +114,7 @@ export default function StudentPage({
       paymentStatus: "PENDING_PAYMENT",
       message: "Registration reserved. Please complete payment to receive QR."
     });
+    setHidePaymentCloseButton(false);
     setNotice(`Continue payment for ${workshop.title}.`);
     onToast?.(`Continue payment for ${workshop.title}.`, "info");
   }
@@ -130,6 +133,7 @@ export default function StudentPage({
   async function processPayment(simulateResult) {
     if (!paymentContext) return;
     try {
+      setHidePaymentCloseButton(true);
       setProcessingPayment(true);
       const result = await api.checkoutPayment(
         token,
@@ -143,11 +147,12 @@ export default function StudentPage({
         setPaymentContext(null);
         onToast?.("Payment completed. Registration confirmed.", "success");
       } else {
+        const nextPaymentStatus = simulateResult === "timeout" ? "TIMEOUT" : simulateResult === "5xx" ? "FAILED_5XX" : result.status;
         setPaymentContext((prev) =>
           prev
             ? {
                 ...prev,
-                paymentStatus: result.status,
+                paymentStatus: nextPaymentStatus,
                 message: result.message || "Payment is still pending. Please retry."
               }
             : prev
@@ -157,6 +162,7 @@ export default function StudentPage({
       }
       onWorkshopsChanged();
     } catch (error) {
+      setHidePaymentCloseButton(true);
       setNotice(error.message);
       onToast?.(error.message || "Payment failed", "error");
     } finally {
@@ -210,7 +216,7 @@ export default function StudentPage({
               Status: <span className="font-semibold">{paymentContext.paymentStatus}</span>
             </p>
             <p className="mt-1 text-xs text-blue-700">{paymentContext.message}</p>
-            <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
                 onClick={() => processPayment("success")}
@@ -242,13 +248,15 @@ export default function StudentPage({
               >
                 Simulate 5xx
               </button>
-              <button
-                type="button"
-                onClick={() => setPaymentContext(null)}
-                className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 sm:w-auto"
-              >
-                Close
-              </button>
+              {!hidePaymentCloseButton ? (
+                <button
+                  type="button"
+                  onClick={() => setPaymentContext(null)}
+                  className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-900 sm:w-auto"
+                >
+                  Close
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
