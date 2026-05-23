@@ -9,8 +9,11 @@ import notificationRouter from './routers/notification.router.js';
 import paymentRouter from './routers/payment.router.js';
 import adminRouter from './routers/admin.router.js';
 import checkinRouter from './routers/checkin.router.js';
+import client from 'prom-client';
 
 const app = express();
+
+client.collectDefaultMetrics();
 
 // Middleware
 app.use(express.json());
@@ -36,6 +39,11 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: config.nodeEnv,
   });
+});
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 // API Routes

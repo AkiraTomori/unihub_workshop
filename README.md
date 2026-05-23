@@ -16,6 +16,8 @@ Ngoài ra, project gốc có `docker-compose.yaml` để chạy toàn bộ hạ 
 - `backend` trên cổng `3000`
 - `nginx` gateway trên cổng `8080`
 - `redis`, `rabbitmq`
+- `prometheus` trên cổng `9090`
+- `grafana` trên cổng `3001`
 - 4 worker container riêng: `ai-summary-worker`, `csv-sync-worker`, `notification-worker`, `outbox-worker`
 
 ## 1) Thiết lập biến môi trường
@@ -31,6 +33,10 @@ Copy `src/backend/.env.example` thành `src/backend/.env` rồi chỉnh các gi�
 - Các key khác như SMTP, Vertex AI, payment gateway
 
 Lưu ý với Vertex AI: cần tạo Service Account trên Google Cloud Platform, cấp quyền phù hợp như `Vertex User` hoặc `Vertex AI User`, sau đó tạo key JSON để hệ thống được cấp quyền truy cập.
+
+### Observability
+
+Backend có endpoint Prometheus tại `GET /metrics`, còn Prometheus lấy dữ liệu từ `backend:3000` theo file cấu hình `infra/prometheus.yml`. Grafana được provision sẵn datasource trỏ vào Prometheus để bạn mở lên là xem dashboard được ngay.
 
 ### Frontend
 
