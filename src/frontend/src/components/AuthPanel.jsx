@@ -4,10 +4,10 @@ import { AtSign, Eye, EyeOff, IdCard, Lock, LogIn, UserPlus, UserRound } from "l
 
 export default function AuthPanel({ onLogin, onRegister, loading, isAuthenticated, authErrorType }) {
   const [mode, setMode] = useState("login");
-  const [fullName, setFullName] = useState("New Student");
+  const [fullName, setFullName] = useState("");
   const [studentCode, setStudentCode] = useState("");
-  const [email, setEmail] = useState("huy.thai@student.edu.vn");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSwitchingMode, setIsSwitchingMode] = useState(false);

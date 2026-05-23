@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../services/api";
-import { initialWorkshops } from "../../data/workshops";
+import { initialWorkshops } from "../../mockData/workshops";
 
 function mapWorkshop(record) {
   const room = record.room || record.room_name || record.roomName || "TBD";
